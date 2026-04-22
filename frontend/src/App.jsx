@@ -13,6 +13,8 @@ import Categories from './pages/Categories';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Goals from './pages/Goals';
+import RecurringTransactions from './pages/RecurringTransactions';
 
 function PrivateRoute({ children }) {
   const { token, user, loading } = useSelector((s) => s.auth);
@@ -51,6 +53,8 @@ export default function App() {
           <Route path="transactions" element={<Transactions />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="goals" element={<Goals />} />
+          <Route path="recurring" element={<RecurringTransactions />} />
         </Route>
       </Routes>
     </BrowserRouter>

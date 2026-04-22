@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 const { seedUserDefaults } = require('../config/passport');
 const { fmtUser } = require('../lib/format');
+const { processRecurringTransactions } = require('../services/recurringService');
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -36,6 +37,9 @@ exports.login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
+    // Process recurring transactions
+    await processRecurringTransactions(user.id);
+
     res.json({ token: generateToken(user.id), user: fmtUser(user) });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -62,7 +66,10 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-exports.googleCallback = (req, res) => {
+exports.googleCallback = async (req, res) => {
+  // Process recurring transactions
+  await processRecurringTransactions(req.user.id);
+
   const token = generateToken(req.user.id);
   const clientUrl = (process.env.CLIENT_URL || 'http://localhost:3000').split(',')[0].trim();
   res.redirect(`${clientUrl}/oauth-callback?token=${token}`);

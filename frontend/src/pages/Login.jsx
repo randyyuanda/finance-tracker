@@ -77,7 +77,7 @@ export default function Login() {
           icon={<GoogleOutlined />}
           className="auth-google-btn"
           style={{ height: 48, borderRadius: 12, marginBottom: 20 }}
-          onClick={() => { window.location.href = '/api/auth/google'; }}
+          onClick={() => { window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`; }}
         >
           Continue with Google
         </Button>

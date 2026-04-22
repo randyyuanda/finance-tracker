@@ -39,6 +39,7 @@ export default function Dashboard() {
   const { accounts, totalBalance, thisMonth, lastMonth, recentTransactions, balanceHistory, loading, historyLoading } =
     useSelector((s) => s.dashboard);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
+  const themeMode = useSelector((s) => s.settings.themeMode);
 
   useEffect(() => {
     dispatch(fetchDashboard());
@@ -69,17 +70,49 @@ export default function Dashboard() {
             className="stat-card"
             style={{ 
               height: '100%',
-              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`, 
-              border: 'none',
+              background: themeMode === 'dark' 
+                ? `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` 
+                : `linear-gradient(135deg, ${primaryColor}0a, ${primaryColor}15)`, 
+              border: themeMode === 'dark' ? 'none' : `1px solid ${primaryColor}20`,
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <Text style={{ color: 'rgba(255,255,255,0.8)', display: 'block', marginBottom: 4, fontSize: 13 }}>{t('totalBalance')}</Text>
+            {themeMode !== 'dark' && (
+              <div style={{ 
+                position: 'absolute', 
+                top: -20, 
+                right: -20, 
+                width: 120, 
+                height: 120, 
+                background: primaryColor, 
+                filter: 'blur(50px)', 
+                opacity: 0.12, 
+                borderRadius: '50%' 
+              }} />
+            )}
+            <Text style={{ 
+              color: themeMode === 'dark' ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)', 
+              display: 'block', 
+              marginBottom: 4, 
+              fontSize: 13,
+              fontWeight: 500 
+            }}>
+              {t('totalBalance')}
+            </Text>
             {loading
               ? <Skeleton.Input active size="large" style={{ width: '80%' }} />
-              : <Title level={2} style={{ color: '#fff', margin: 0, letterSpacing: -0.5 }}>IDR {fmt(totalBalance)}</Title>
+              : <Title level={2} style={{ 
+                  color: themeMode === 'dark' ? '#fff' : primaryColor, 
+                  margin: 0, 
+                  letterSpacing: -0.5,
+                  fontWeight: 800 
+                }}>
+                  IDR {fmt(totalBalance)}
+                </Title>
             }
           </Card>
         </Col>

@@ -13,12 +13,14 @@ import {
   MenuUnfoldOutlined,
   BankOutlined,
   SettingOutlined,
+  TargetOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import useT from '../i18n/useT';
 
-const { Sider, Header, Content } = Layout;
+const { Sider, Header, Content, Footer } = Layout;
 const { Text } = Typography;
 
 export default function AppLayout() {
@@ -40,6 +42,8 @@ export default function AppLayout() {
     { key: '/categories', icon: <TagsOutlined />, label: t('nav_categories') },
     { key: '/transactions', icon: <SwapOutlined />, label: t('nav_transactions') },
     { key: '/reports', icon: <FileTextOutlined />, label: t('nav_reports') },
+    { key: '/goals', icon: <TargetOutlined />, label: t('nav_goals') || 'Goals' },
+    { key: '/recurring', icon: <SyncOutlined />, label: t('nav_recurring') || 'Recurring' },
     { key: '/settings', icon: <SettingOutlined />, label: t('nav_settings') },
   ];
 
@@ -150,9 +154,14 @@ export default function AppLayout() {
           </Dropdown>
         </Header>
 
-        <Content style={{ padding: isMobile ? '12px' : '24px', minHeight: 'calc(100vh - 64px)', overflow: 'auto' }}>
+        <Content style={{ padding: isMobile ? '12px' : '24px', minHeight: 'calc(100vh - 128px)', overflow: 'auto' }}>
           <Outlet />
         </Content>
+        <Footer style={{ textAlign: 'center', padding: '16px 24px', background: 'transparent' }}>
+          <Text type="secondary" style={{ fontSize: 13, opacity: 0.7 }}>
+            Randy Yuanda © 2026
+          </Text>
+        </Footer>
       </Layout>
     </Layout>
   );

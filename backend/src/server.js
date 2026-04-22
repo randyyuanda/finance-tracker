@@ -42,6 +42,8 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/goals', require('./routes/goals'));
+app.use('/api/recurring', require('./routes/recurring'));
 
 app.get('/api/health', async (_, res) => {
   try {

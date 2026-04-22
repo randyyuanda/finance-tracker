@@ -5,6 +5,8 @@ import categoryReducer from './slices/categorySlice';
 import transactionReducer from './slices/transactionSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import settingsReducer from './slices/settingsSlice';
+import goalReducer from './slices/goalSlice';
+import recurringReducer from './slices/recurringSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,5 +16,7 @@ export const store = configureStore({
     transactions: transactionReducer,
     dashboard: dashboardReducer,
     settings: settingsReducer,
+    goals: goalReducer,
+    recurring: recurringReducer,
   },
 });

@@ -2,6 +2,7 @@ const t = {
   en: {
     nav_dashboard: 'Dashboard', nav_accounts: 'Accounts', nav_categories: 'Categories',
     nav_transactions: 'Transactions', nav_reports: 'Reports', nav_settings: 'Settings',
+    nav_goals: 'Goals', nav_recurring: 'Recurring',
     logout: 'Logout',
     totalBalance: 'Total Balance', incomeThisMonth: 'Income', expenseThisMonth: 'Expenses',
     savingsThisMonth: 'Savings', vsLastMonth: 'vs last month', thisMonth: 'This Month',
@@ -51,10 +52,13 @@ const t = {
     deleteCategoryConfirm: 'Are you sure you want to delete this category?',
     noCategoriesYet: 'No categories yet', addFirstCategory: 'Add your first category',
     reportSubtitle: 'Analyze your spending patterns with interactive category charts.',
+    addGoal: 'Add Goal', noGoals: 'No goals yet',
+    addRecurring: 'Add Recurring', noRecurring: 'No recurring transactions',
   },
   id: {
     nav_dashboard: 'Dasbor', nav_accounts: 'Akun', nav_categories: 'Kategori',
     nav_transactions: 'Transaksi', nav_reports: 'Laporan', nav_settings: 'Pengaturan',
+    nav_goals: 'Target', nav_recurring: 'Berulang',
     logout: 'Keluar',
     totalBalance: 'Total Saldo', incomeThisMonth: 'Pemasukan', expenseThisMonth: 'Pengeluaran',
     savingsThisMonth: 'Tabungan', vsLastMonth: 'vs bulan lalu', thisMonth: 'Bulan Ini',
@@ -104,6 +108,8 @@ const t = {
     deleteCategoryConfirm: 'Apakah Anda yakin ingin menghapus kategori ini?',
     noCategoriesYet: 'Belum ada kategori', addFirstCategory: 'Tambah kategori pertama Anda',
     reportSubtitle: 'Analisis pola pengeluaran Anda dengan grafik kategori interaktif.',
+    addGoal: 'Tambah Target', noGoals: 'Belum ada target',
+    addRecurring: 'Tambah Berulang', noRecurring: 'Belum ada transaksi berulang',
   },
   zh: {
     nav_dashboard: '仪表盘', nav_accounts: '账户', nav_categories: '类别',
