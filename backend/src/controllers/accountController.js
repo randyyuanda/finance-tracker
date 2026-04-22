@@ -1,9 +1,13 @@
-const Account = require('../models/Account');
+const prisma = require('../lib/prisma');
+const { fmtAccount } = require('../lib/format');
 
 exports.getAccounts = async (req, res) => {
   try {
-    const accounts = await Account.find({ userId: req.user._id, isActive: true }).sort('name');
-    res.json(accounts);
+    const accounts = await prisma.account.findMany({
+      where: { userId: req.user._id, isActive: true },
+      orderBy: { name: 'asc' },
+    });
+    res.json(accounts.map(fmtAccount));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -11,8 +15,19 @@ exports.getAccounts = async (req, res) => {
 
 exports.createAccount = async (req, res) => {
   try {
-    const account = await Account.create({ ...req.body, userId: req.user._id });
-    res.status(201).json(account);
+    const { name, type, balance, currency, color, icon } = req.body;
+    const account = await prisma.account.create({
+      data: {
+        userId: req.user._id,
+        name,
+        type: type || 'cash',
+        balance: Number(balance) || 0,
+        currency: currency || 'IDR',
+        color: color || '#1890ff',
+        icon: icon || 'wallet',
+      },
+    });
+    res.status(201).json(fmtAccount(account));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -20,14 +35,17 @@ exports.createAccount = async (req, res) => {
 
 exports.updateAccount = async (req, res) => {
   try {
-    const { balance, ...rest } = req.body;
-    const account = await Account.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      rest,
-      { new: true, runValidators: true }
-    );
-    if (!account) return res.status(404).json({ message: 'Account not found' });
-    res.json(account);
+    const { balance, userId, ...data } = req.body;
+    const existing = await prisma.account.findFirst({
+      where: { id: req.params.id, userId: req.user._id },
+    });
+    if (!existing) return res.status(404).json({ message: 'Account not found' });
+
+    const account = await prisma.account.update({
+      where: { id: req.params.id },
+      data,
+    });
+    res.json(fmtAccount(account));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -35,12 +53,15 @@ exports.updateAccount = async (req, res) => {
 
 exports.deleteAccount = async (req, res) => {
   try {
-    const account = await Account.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      { isActive: false },
-      { new: true }
-    );
-    if (!account) return res.status(404).json({ message: 'Account not found' });
+    const existing = await prisma.account.findFirst({
+      where: { id: req.params.id, userId: req.user._id },
+    });
+    if (!existing) return res.status(404).json({ message: 'Account not found' });
+
+    await prisma.account.update({
+      where: { id: req.params.id },
+      data: { isActive: false },
+    });
     res.json({ message: 'Account deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

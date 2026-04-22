@@ -4,12 +4,10 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 const morgan = require('morgan');
-const connectDB = require('./config/database');
+const prisma = require('./lib/prisma');
 require('./config/passport');
 
 const app = express();
-
-connectDB();
 
 app.use(morgan('dev'));
 app.use(
@@ -38,7 +36,14 @@ app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
-app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
+app.get('/api/health', async (_, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', db: 'postgresql' });
+  } catch {
+    res.status(500).json({ status: 'error', db: 'disconnected' });
+  }
+});
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server on port ${PORT} — DB: PostgreSQL (Neon)`));

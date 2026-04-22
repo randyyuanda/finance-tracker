@@ -1,11 +1,12 @@
-const Category = require('../models/Category');
+const prisma = require('../lib/prisma');
+const { fmtCategory } = require('../lib/format');
 
 exports.getCategories = async (req, res) => {
   try {
-    const filter = { userId: req.user._id };
-    if (req.query.type) filter.type = req.query.type;
-    const categories = await Category.find(filter).sort('name');
-    res.json(categories);
+    const where = { userId: req.user._id };
+    if (req.query.type) where.type = req.query.type;
+    const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });
+    res.json(categories.map(fmtCategory));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -13,8 +14,11 @@ exports.getCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
-    const category = await Category.create({ ...req.body, userId: req.user._id });
-    res.status(201).json(category);
+    const { name, type, color, icon } = req.body;
+    const category = await prisma.category.create({
+      data: { userId: req.user._id, name, type, color: color || '#1890ff', icon: icon || 'tag' },
+    });
+    res.status(201).json(fmtCategory(category));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -22,13 +26,14 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   try {
-    const category = await Category.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!category) return res.status(404).json({ message: 'Category not found' });
-    res.json(category);
+    const existing = await prisma.category.findFirst({
+      where: { id: req.params.id, userId: req.user._id },
+    });
+    if (!existing) return res.status(404).json({ message: 'Category not found' });
+
+    const { userId, ...data } = req.body;
+    const category = await prisma.category.update({ where: { id: req.params.id }, data });
+    res.json(fmtCategory(category));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -36,8 +41,12 @@ exports.updateCategory = async (req, res) => {
 
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-    if (!category) return res.status(404).json({ message: 'Category not found' });
+    const existing = await prisma.category.findFirst({
+      where: { id: req.params.id, userId: req.user._id },
+    });
+    if (!existing) return res.status(404).json({ message: 'Category not found' });
+
+    await prisma.category.delete({ where: { id: req.params.id } });
     res.json({ message: 'Category deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

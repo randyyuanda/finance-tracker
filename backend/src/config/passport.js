@@ -1,8 +1,6 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
-const Category = require('../models/Category');
-const Account = require('../models/Account');
+const prisma = require('../lib/prisma');
 
 const DEFAULT_CATEGORIES = [
   { name: 'Salary', type: 'income', color: '#52c41a', icon: 'money-collect' },
@@ -21,8 +19,12 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const seedUserDefaults = async (userId) => {
-  await Category.insertMany(DEFAULT_CATEGORIES.map((c) => ({ ...c, userId, isDefault: true })));
-  await Account.create({ userId, name: 'Cash', type: 'cash', balance: 0, color: '#52c41a', icon: 'wallet' });
+  await prisma.category.createMany({
+    data: DEFAULT_CATEGORIES.map((c) => ({ ...c, userId, isDefault: true })),
+  });
+  await prisma.account.create({
+    data: { userId, name: 'Cash', type: 'cash', balance: 0, color: '#52c41a', icon: 'wallet' },
+  });
 };
 
 passport.use(
@@ -34,21 +36,27 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id });
+        let user = await prisma.user.findUnique({ where: { googleId: profile.id } });
         if (!user) {
-          user = await User.findOne({ email: profile.emails[0].value });
+          user = await prisma.user.findUnique({ where: { email: profile.emails[0].value } });
           if (user) {
-            user.googleId = profile.id;
-            if (!user.avatar) user.avatar = profile.photos?.[0]?.value;
-            await user.save();
-          } else {
-            user = await User.create({
-              name: profile.displayName,
-              email: profile.emails[0].value,
-              googleId: profile.id,
-              avatar: profile.photos?.[0]?.value,
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                googleId: profile.id,
+                avatar: user.avatar || profile.photos?.[0]?.value,
+              },
             });
-            await seedUserDefaults(user._id);
+          } else {
+            user = await prisma.user.create({
+              data: {
+                name: profile.displayName,
+                email: profile.emails[0].value,
+                googleId: profile.id,
+                avatar: profile.photos?.[0]?.value,
+              },
+            });
+            await seedUserDefaults(user.id);
           }
         }
         done(null, user);
@@ -59,10 +67,10 @@ passport.use(
   )
 );
 
-passport.serializeUser((user, done) => done(null, user._id));
+passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await prisma.user.findUnique({ where: { id } });
     done(null, user);
   } catch (err) {
     done(err, null);

@@ -1,5 +1,5 @@
 const ExcelJS = require('exceljs');
-const Transaction = require('../models/Transaction');
+const prisma = require('../lib/prisma');
 const { subMonths, subYears, startOfDay } = require('date-fns');
 
 const PERIODS = {
@@ -15,18 +15,23 @@ exports.downloadReport = async (req, res) => {
     const { period = 'alltime', accountId, type } = req.query;
     const userId = req.user._id;
 
-    const filter = { userId };
     const startFn = PERIODS[period];
     if (!startFn) return res.status(400).json({ message: 'Invalid period' });
-    const startDate = startFn();
-    if (startDate) filter.date = { $gte: startOfDay(startDate) };
-    if (accountId) filter.accountId = accountId;
-    if (type) filter.type = type;
 
-    const transactions = await Transaction.find(filter)
-      .populate('accountId', 'name')
-      .populate('categoryId', 'name type')
-      .sort({ date: -1 });
+    const where = { userId };
+    const startDate = startFn();
+    if (startDate) where.date = { gte: startOfDay(startDate) };
+    if (accountId) where.accountId = accountId;
+    if (type) where.type = type;
+
+    const transactions = await prisma.transaction.findMany({
+      where,
+      include: {
+        account: { select: { name: true } },
+        category: { select: { name: true } },
+      },
+      orderBy: { date: 'desc' },
+    });
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Finance Tracker';
@@ -41,12 +46,9 @@ exports.downloadReport = async (req, res) => {
       { header: 'Note', key: 'note', width: 30 },
     ];
 
-    txSheet.getRow(1).font = { bold: true };
-    txSheet.getRow(1).fill = {
-      type: 'pattern', pattern: 'solid',
-      fgColor: { argb: 'FF1890FF' },
-    };
-    txSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    const headerRow = txSheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1890FF' } };
 
     let totalIncome = 0;
     let totalExpense = 0;
@@ -54,8 +56,8 @@ exports.downloadReport = async (req, res) => {
     transactions.forEach((tx) => {
       txSheet.addRow({
         date: new Date(tx.date).toLocaleDateString('id-ID'),
-        account: tx.accountId?.name || '-',
-        category: tx.categoryId?.name || '-',
+        account: tx.account?.name || '-',
+        category: tx.category?.name || '-',
         type: tx.type.charAt(0).toUpperCase() + tx.type.slice(1),
         amount: tx.type === 'income' ? tx.amount : -tx.amount,
         note: tx.note || '',
@@ -72,10 +74,12 @@ exports.downloadReport = async (req, res) => {
       { header: 'Amount (IDR)', key: 'amount', width: 20 },
     ];
     summarySheet.getRow(1).font = { bold: true };
-    summarySheet.addRow({ metric: 'Total Income', amount: totalIncome });
-    summarySheet.addRow({ metric: 'Total Expense', amount: totalExpense });
-    summarySheet.addRow({ metric: 'Net Savings', amount: totalIncome - totalExpense });
-    summarySheet.addRow({ metric: 'Total Transactions', amount: transactions.length });
+    summarySheet.addRows([
+      { metric: 'Total Income', amount: totalIncome },
+      { metric: 'Total Expense', amount: totalExpense },
+      { metric: 'Net Savings', amount: totalIncome - totalExpense },
+      { metric: 'Total Transactions', amount: transactions.length },
+    ]);
     summarySheet.getColumn('amount').numFmt = '#,##0';
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
