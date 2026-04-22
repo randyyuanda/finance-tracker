@@ -46,7 +46,24 @@ exports.getMe = async (req, res) => {
   res.json(req.user);
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, avatar } = req.body;
+    const userId = req.user._id;
+
+    const data = {};
+    if (name && name.trim()) data.name = name.trim();
+    if (avatar !== undefined) data.avatar = avatar;
+
+    const updated = await prisma.user.update({ where: { id: userId }, data });
+    res.json(fmtUser(updated));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.googleCallback = (req, res) => {
   const token = generateToken(req.user.id);
-  res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${token}`);
+  const clientUrl = (process.env.CLIENT_URL || 'http://localhost:3000').split(',')[0].trim();
+  res.redirect(`${clientUrl}/oauth-callback?token=${token}`);
 };

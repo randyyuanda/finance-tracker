@@ -12,29 +12,36 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BankOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
+import useT from '../i18n/useT';
 
 const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
 
-const NAV_ITEMS = [
-  { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/accounts', icon: <WalletOutlined />, label: 'Accounts' },
-  { key: '/categories', icon: <TagsOutlined />, label: 'Categories' },
-  { key: '/transactions', icon: <SwapOutlined />, label: 'Transactions' },
-  { key: '/reports', icon: <FileTextOutlined />, label: 'Reports' },
-];
-
 export default function AppLayout() {
+  const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth);
+  const primaryColor = useSelector((s) => s.settings.primaryColor);
+  const themeMode = useSelector((s) => s.settings.themeMode);
+  
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const NAV_ITEMS = [
+    { key: '/', icon: <DashboardOutlined />, label: t('nav_dashboard') },
+    { key: '/accounts', icon: <WalletOutlined />, label: t('nav_accounts') },
+    { key: '/categories', icon: <TagsOutlined />, label: t('nav_categories') },
+    { key: '/transactions', icon: <SwapOutlined />, label: t('nav_transactions') },
+    { key: '/reports', icon: <FileTextOutlined />, label: t('nav_reports') },
+    { key: '/settings', icon: <SettingOutlined />, label: t('nav_settings') },
+  ];
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -49,10 +56,12 @@ export default function AppLayout() {
 
   const userMenu = {
     items: [
-      { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
+      { key: 'settings', icon: <UserOutlined />, label: t('nav_settings') },
+      { key: 'logout', icon: <LogoutOutlined />, label: t('logout'), danger: true },
     ],
     onClick: ({ key }) => {
       if (key === 'logout') dispatch(logout());
+      else if (key === 'settings') navigate('/settings');
     },
   };
 
@@ -63,7 +72,7 @@ export default function AppLayout() {
       selectedKeys={[location.pathname]}
       items={NAV_ITEMS}
       onClick={({ key }) => handleNav(key)}
-      style={{ borderRight: 'none', flex: 1 }}
+      style={{ borderRight: 'none', flex: 1, paddingTop: 8 }}
     />
   );
 
@@ -75,13 +84,13 @@ export default function AppLayout() {
           collapsed={collapsed}
           onCollapse={setCollapsed}
           theme="dark"
-          width={220}
+          width={240}
           style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'auto' }}
         >
-          <div style={{ padding: collapsed ? '20px 8px' : '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BankOutlined style={{ color: '#1890ff', fontSize: 22 }} />
-              {!collapsed && <Text strong style={{ color: '#fff', fontSize: 16 }}>FinTrack</Text>}
+          <div style={{ padding: collapsed ? '20px 8px' : '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <BankOutlined style={{ color: primaryColor, fontSize: 24 }} />
+              {!collapsed && <Text strong style={{ color: '#fff', fontSize: 18, letterSpacing: 0.5 }}>FinTrack</Text>}
             </div>
           </div>
           {menuContent}
@@ -92,14 +101,14 @@ export default function AppLayout() {
         placement="left"
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        width={220}
-        bodyStyle={{ padding: 0, background: '#001529' }}
+        width={250}
+        styles={{ body: { padding: 0, background: '#001529' } }}
         headerStyle={{ display: 'none' }}
       >
-        <div style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <BankOutlined style={{ color: '#1890ff', fontSize: 22 }} />
-            <Text strong style={{ color: '#fff', fontSize: 16 }}>FinTrack</Text>
+        <div style={{ padding: '24px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BankOutlined style={{ color: primaryColor, fontSize: 24 }} />
+            <Text strong style={{ color: '#fff', fontSize: 20 }}>FinTrack</Text>
           </div>
         </div>
         {menuContent}
@@ -108,37 +117,44 @@ export default function AppLayout() {
       <Layout>
         <Header
           style={{
-            background: '#fff',
-            padding: '0 16px',
+            background: 'var(--header-bg, #fff)',
+            padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,21,41,0.08)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             position: 'sticky',
             top: 0,
             zIndex: 100,
+            height: 64,
           }}
         >
           <Button
             type="text"
             icon={isMobile ? <MenuUnfoldOutlined /> : collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => isMobile ? setMobileOpen(true) : setCollapsed(!collapsed)}
-            style={{ fontSize: 16 }}
+            style={{ fontSize: 18 }}
           />
           <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}>
-              <Avatar src={user?.avatar} icon={<UserOutlined />} style={{ background: '#1890ff' }} size={32} />
-              <Text className="desktop-only" strong style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 12px', borderRadius: 12, transition: 'background 0.3s' }} className="user-dropdown-hover">
+              <Avatar 
+                src={user?.avatar} 
+                icon={<UserOutlined />} 
+                style={{ background: primaryColor, boxShadow: `0 2px 6px ${primaryColor}40` }} 
+                size={34} 
+              />
+              <Text className="desktop-only" strong style={{ fontSize: 14 }}>
                 {user?.name}
               </Text>
             </div>
           </Dropdown>
         </Header>
 
-        <Content style={{ padding: '16px', minHeight: 'calc(100vh - 64px)', overflow: 'auto' }}>
+        <Content style={{ padding: isMobile ? '12px' : '24px', minHeight: 'calc(100vh - 64px)', overflow: 'auto' }}>
           <Outlet />
         </Content>
       </Layout>
     </Layout>
   );
 }
+

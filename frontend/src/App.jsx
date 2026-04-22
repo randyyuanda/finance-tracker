@@ -12,6 +12,7 @@ import Accounts from './pages/Accounts';
 import Categories from './pages/Categories';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 function PrivateRoute({ children }) {
   const { token, user, loading } = useSelector((s) => s.auth);
@@ -42,17 +43,14 @@ export default function App() {
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route
           path="/"
-          element={
-            <PrivateRoute>
-              <AppLayout />
-            </PrivateRoute>
-          }
+          element={<PrivateRoute><AppLayout /></PrivateRoute>}
         >
           <Route index element={<Dashboard />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="categories" element={<Categories />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

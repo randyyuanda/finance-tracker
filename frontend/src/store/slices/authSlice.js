@@ -30,6 +30,15 @@ export const fetchMe = createAsyncThunk('auth/fetchMe', async (_, { rejectWithVa
   }
 });
 
+export const updateProfile = createAsyncThunk('auth/updateProfile', async (data, { rejectWithValue }) => {
+  try {
+    const res = await api.patch('/auth/profile', data);
+    return res.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Update failed');
+  }
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: { user: null, token: localStorage.getItem('token'), loading: false, error: null },
@@ -52,30 +61,17 @@ const authSlice = createSlice({
     const rejected = (state, action) => { state.loading = false; state.error = action.payload; };
     builder
       .addCase(login.pending, pending)
-      .addCase(login.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-      })
+      .addCase(login.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.token = action.payload.token; })
       .addCase(login.rejected, rejected)
       .addCase(register.pending, pending)
-      .addCase(register.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-      })
+      .addCase(register.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.token = action.payload.token; })
       .addCase(register.rejected, rejected)
       .addCase(fetchMe.pending, pending)
-      .addCase(fetchMe.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(fetchMe.rejected, (state) => {
-        state.loading = false;
-        state.user = null;
-        state.token = null;
-        localStorage.removeItem('token');
-      });
+      .addCase(fetchMe.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
+      .addCase(fetchMe.rejected, (state) => { state.loading = false; state.user = null; state.token = null; localStorage.removeItem('token'); })
+      .addCase(updateProfile.pending, pending)
+      .addCase(updateProfile.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
+      .addCase(updateProfile.rejected, rejected);
   },
 });
 
