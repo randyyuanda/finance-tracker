@@ -7,6 +7,9 @@ import { fetchAccounts } from '../store/slices/accountSlice';
 import { fetchCategories } from '../store/slices/categorySlice';
 import useT from '../i18n/useT';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const { Title, Text } = Typography;
 const { Option } = Select;
