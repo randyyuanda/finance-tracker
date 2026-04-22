@@ -18,8 +18,8 @@ export default function RecurringTransactions() {
   const dispatch = useDispatch();
   const t = useT();
   const { transactions, loading } = useSelector((s) => s.recurring);
-  const { accounts } = useSelector((s) => s.accounts);
-  const { categories } = useSelector((s) => s.categories);
+  const { list: accounts } = useSelector((s) => s.accounts);
+  const { list: categories } = useSelector((s) => s.categories);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
