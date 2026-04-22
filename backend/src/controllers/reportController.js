@@ -34,8 +34,8 @@ exports.getCategoryBreakdown = async (req, res) => {
       _count: { id: true },
     });
 
-    const catIds = [...new Set(grouped.map((r) => r.categoryId))];
-    const cats = await prisma.category.findMany({ where: { id: { in: catIds } } });
+    const catIds = [...new Set(grouped.map((r) => r.categoryId).filter(Boolean))];
+    const cats = catIds.length ? await prisma.category.findMany({ where: { id: { in: catIds } } }) : [];
     const catMap = Object.fromEntries(cats.map((c) => [c.id, c]));
 
     const income = grouped
@@ -85,22 +85,7 @@ const addCategorySheet = (workbook, name, rows, headerColor, totalKey) => {
   });
 
   sheet.getColumn('total').numFmt = '#,##0';
-
-  if (rows.length > 0) {
-    sheet.addConditionalFormatting({
-      ref: `B2:B${rows.length + 1}`,
-      rules: [{
-        type: 'dataBar',
-        priority: 1,
-        dataBar: {
-          cfvo: [{ type: 'min' }, { type: 'max' }],
-          color: { argb: headerColor },
-          showValue: true,
-          gradient: true,
-        },
-      }],
-    });
-  }
+  sheet.getColumn('pct').alignment = { horizontal: 'center' };
 
   const totalRow = sheet.addRow({ name: 'TOTAL', total: grandTotal, count: rows.reduce((s, r) => s + r.count, 0), pct: '100%' });
   totalRow.font = { bold: true };
@@ -133,8 +118,8 @@ exports.downloadReport = async (req, res) => {
       }),
     ]);
 
-    const catIds = [...new Set(grouped.map((r) => r.categoryId))];
-    const cats = await prisma.category.findMany({ where: { id: { in: catIds } } });
+    const catIds = [...new Set(grouped.map((r) => r.categoryId).filter(Boolean))];
+    const cats = catIds.length ? await prisma.category.findMany({ where: { id: { in: catIds } } }) : [];
     const catMap = Object.fromEntries(cats.map((c) => [c.id, c]));
 
     const incomeBreakdown = grouped

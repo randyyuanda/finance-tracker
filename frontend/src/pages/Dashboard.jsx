@@ -90,8 +90,8 @@ export default function Dashboard() {
               <Statistic
                 title={<Text type="secondary" style={{ fontSize: 12 }}>{title}</Text>}
                 value={Math.abs(curr)}
-                prefix={<span style={{ fontSize: 12, marginRight: 4, color: 'rgba(0,0,0,0.45)' }}>IDR</span>}
-                formatter={(v) => <span style={{ fontWeight: 700, color: '#262626' }}>{fmt(v)}</span>}
+                prefix={<span style={{ fontSize: 12, marginRight: 4, color: 'var(--text-secondary)' }}>IDR</span>}
+                formatter={(v) => <span style={{ fontWeight: 700, color: color }}>{fmt(v)}</span>}
                 loading={loading}
               />
               {!loading && (

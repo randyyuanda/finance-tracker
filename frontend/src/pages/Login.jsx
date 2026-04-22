@@ -22,11 +22,13 @@ export default function Login() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card" style={{ background: '#fff', padding: '40px 32px', borderRadius: 20 }}>
+      <div className="auth-card-inner">
         <Space direction="vertical" align="center" style={{ width: '100%', marginBottom: 28 }}>
-          <BankOutlined style={{ fontSize: 40, color: '#1890ff' }} />
-          <Title level={2} style={{ margin: 0 }}>Welcome back</Title>
-          <Text type="secondary">Sign in to your FinTrack account</Text>
+          <div className="auth-logo">
+            <BankOutlined style={{ fontSize: 28, color: '#fff' }} />
+          </div>
+          <Title level={2} style={{ margin: 0, color: '#fff' }}>Welcome back</Title>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Sign in to your FinTrack account</Text>
         </Space>
 
         {(error || params.get('error')) && (
@@ -34,42 +36,61 @@ export default function Login() {
             message={error || 'OAuth sign-in failed. Please try again.'}
             type="error"
             showIcon
-            style={{ marginBottom: 20 }}
+            style={{ marginBottom: 20, borderRadius: 10 }}
           />
         )}
 
         <Form layout="vertical" onFinish={onFinish} size="large">
           <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Valid email required' }]}>
-            <Input prefix={<MailOutlined />} placeholder="Email address" />
+            <Input
+              prefix={<MailOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Email address"
+              className="auth-input"
+            />
           </Form.Item>
           <Form.Item name="password" rules={[{ required: true, message: 'Password required' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+            <Input.Password
+              prefix={<LockOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Password"
+              className="auth-input"
+            />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 44, marginBottom: 12 }}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            loading={loading}
+            size="large"
+            style={{ height: 48, borderRadius: 12, fontWeight: 600, fontSize: 15, marginBottom: 12 }}
+          >
             Sign In
           </Button>
         </Form>
 
-        <Divider plain>or</Divider>
+        <Divider style={{ borderColor: 'rgba(255,255,255,0.2)', margin: '16px 0' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>or</Text>
+        </Divider>
 
         <Button
           block
           size="large"
           icon={<GoogleOutlined />}
-          style={{ height: 44, marginBottom: 20 }}
+          className="auth-google-btn"
+          style={{ height: 48, borderRadius: 12, marginBottom: 20 }}
           onClick={() => { window.location.href = '/api/auth/google'; }}
         >
           Continue with Google
         </Button>
 
-        <Text style={{ display: 'block', textAlign: 'center' }}>
-          No account? <Link to="/register">Create one</Link>
+        <Text style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
+          No account?{' '}
+          <Link to="/register" style={{ color: '#fff', fontWeight: 600 }}>Create one</Link>
         </Text>
 
-        <Divider plain style={{ margin: '16px 0 8px' }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>Demo account</Text>
+        <Divider style={{ borderColor: 'rgba(255,255,255,0.15)', margin: '16px 0 8px' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Demo account</Text>
         </Divider>
-        <Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 12 }}>
+        <Text style={{ display: 'block', textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
           john@example.com / password123
         </Text>
       </div>

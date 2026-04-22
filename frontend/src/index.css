@@ -2,7 +2,7 @@
   --primary-color: #1890ff;
   --bg-body: #f8fafc;
   --bg-card: #ffffff;
-  --text-main: #334155;
+  --text-main: #1a1a2e;
   --text-secondary: #64748b;
   --header-bg: #ffffff;
   --border-color: rgba(0, 0, 0, 0.06);
@@ -34,22 +34,24 @@ body {
   min-height: 100vh;
 }
 
+/* ─── Page layout ─── */
 .page-container {
   padding: 24px;
   max-width: 1240px;
   margin: 0 auto;
 }
 
+/* ─── Cards ─── */
 .stat-card {
   border-radius: 16px !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
   border: 1px solid var(--border-color) !important;
   background: var(--bg-card) !important;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1) !important;
 }
 
 .account-card-small {
@@ -59,34 +61,120 @@ body {
 
 .account-card-small:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* ─── Auth pages ─── */
 .auth-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top left, #1890ff, #001529);
-  padding: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f172a 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-.auth-card {
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(24,144,255,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-container::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(114,46,209,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-card-inner {
   width: 100%;
   max-width: 440px;
-  border-radius: 24px !important;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3) !important;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 40px 36px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
 }
 
-.user-dropdown-hover:hover {
-  background: rgba(0, 0, 0, 0.04);
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(24,144,255,0.4);
 }
 
-[data-theme='dark'] .user-dropdown-hover:hover {
-  background: rgba(255, 255, 255, 0.08);
+/* Auth inputs — light text on dark glass */
+.auth-input {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 10px !important;
+  color: #fff !important;
 }
 
+.auth-input::placeholder,
+.auth-input input::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.auth-input input {
+  background: transparent !important;
+  color: #fff !important;
+}
+
+.auth-input .ant-input-suffix,
+.auth-input .ant-input-prefix {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.auth-input:focus,
+.auth-input:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: none !important;
+}
+
+.auth-google-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.auth-google-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #fff !important;
+}
+
+.auth-google-btn .anticon {
+  color: #fff !important;
+}
+
+/* Ant Design form validation messages on dark bg */
+.auth-card-inner .ant-form-item-explain-error {
+  color: #ff9a9a !important;
+}
+
+/* ─── Layout ─── */
 .ant-layout {
   background: var(--bg-body) !important;
 }
@@ -99,21 +187,95 @@ body {
   background: #001529 !important;
 }
 
-.ant-typography {
-  color: var(--text-main) !important;
+/* ─── Header user dropdown hover ─── */
+.user-dropdown-hover:hover {
+  background: rgba(0, 0, 0, 0.04);
 }
 
-.ant-typography-secondary {
-  color: var(--text-secondary) !important;
+[data-theme='dark'] .user-dropdown-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
+/* ─── Transaction amount colors ─── */
+.transaction-income {
+  color: #52c41a !important;
+  font-weight: 600;
+}
+
+.transaction-expense {
+  color: #ff4d4f !important;
+  font-weight: 600;
+}
+
+/* ─── Dark mode table ─── */
+[data-theme='dark'] .ant-table {
+  background: var(--bg-card) !important;
+}
+
+[data-theme='dark'] .ant-table-thead > tr > th {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ─── Mobile ─── */
 @media (max-width: 768px) {
   .page-container {
-    padding: 16px 12px;
+    padding: 12px;
   }
 
   .desktop-only {
     display: none;
   }
+
+  /* Tighter cards on mobile */
+  .stat-card .ant-card-body {
+    padding: 16px !important;
+  }
+
+  /* Auth card full-width on small screens */
+  .auth-card-inner {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+
+  /* Slightly smaller title on mobile */
+  .ant-typography h2 {
+    font-size: 22px !important;
+  }
+
+  /* Table cells more compact */
+  .ant-table-cell {
+    padding: 8px 8px !important;
+    font-size: 13px;
+  }
+
+  /* Touch-friendly buttons */
+  .ant-btn {
+    min-height: 36px;
+  }
+
+  /* Better modal on mobile */
+  .ant-modal {
+    margin: 8px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
 }
 
+@media (max-width: 480px) {
+  .page-container {
+    padding: 8px;
+  }
+
+  .auth-card-inner {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  /* Stack filter row on very small screens */
+  .ant-row .ant-col-xs-12 {
+    margin-bottom: 6px;
+  }
+}

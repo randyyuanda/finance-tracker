@@ -21,24 +21,38 @@ export default function Register() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card" style={{ background: '#fff', padding: '40px 32px', borderRadius: 20 }}>
-        <Space direction="vertical" align="center" style={{ width: '100%', marginBottom: 28 }}>
-          <BankOutlined style={{ fontSize: 40, color: '#1890ff' }} />
-          <Title level={2} style={{ margin: 0 }}>Create account</Title>
-          <Text type="secondary">Start tracking your finances today</Text>
+      <div className="auth-card-inner">
+        <Space direction="vertical" align="center" style={{ width: '100%', marginBottom: 24 }}>
+          <div className="auth-logo">
+            <BankOutlined style={{ fontSize: 28, color: '#fff' }} />
+          </div>
+          <Title level={2} style={{ margin: 0, color: '#fff' }}>Create account</Title>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Start tracking your finances today</Text>
         </Space>
 
-        {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 20 }} />}
+        {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />}
 
         <Form layout="vertical" onFinish={onFinish} size="large">
           <Form.Item name="name" rules={[{ required: true, message: 'Name required' }]}>
-            <Input prefix={<UserOutlined />} placeholder="Full name" />
+            <Input
+              prefix={<UserOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Full name"
+              className="auth-input"
+            />
           </Form.Item>
           <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Valid email required' }]}>
-            <Input prefix={<MailOutlined />} placeholder="Email address" />
+            <Input
+              prefix={<MailOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Email address"
+              className="auth-input"
+            />
           </Form.Item>
           <Form.Item name="password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="Password (min 6 chars)" />
+            <Input.Password
+              prefix={<LockOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Password (min 6 chars)"
+              className="auth-input"
+            />
           </Form.Item>
           <Form.Item
             name="confirm"
@@ -53,27 +67,42 @@ export default function Register() {
               }),
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Confirm password" />
+            <Input.Password
+              prefix={<LockOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
+              placeholder="Confirm password"
+              className="auth-input"
+            />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 44, marginBottom: 12 }}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            loading={loading}
+            size="large"
+            style={{ height: 48, borderRadius: 12, fontWeight: 600, fontSize: 15, marginBottom: 12 }}
+          >
             Create Account
           </Button>
         </Form>
 
-        <Divider plain>or</Divider>
+        <Divider style={{ borderColor: 'rgba(255,255,255,0.2)', margin: '16px 0' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>or</Text>
+        </Divider>
 
         <Button
           block
           size="large"
           icon={<GoogleOutlined />}
-          style={{ height: 44, marginBottom: 20 }}
+          className="auth-google-btn"
+          style={{ height: 48, borderRadius: 12, marginBottom: 20 }}
           onClick={() => { window.location.href = '/api/auth/google'; }}
         >
           Sign up with Google
         </Button>
 
-        <Text style={{ display: 'block', textAlign: 'center' }}>
-          Already have an account? <Link to="/login">Sign in</Link>
+        <Text style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: '#fff', fontWeight: 600 }}>Sign in</Link>
         </Text>
       </div>
     </div>
