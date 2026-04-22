@@ -2,7 +2,7 @@ const t = {
   en: {
     nav_dashboard: 'Dashboard', nav_accounts: 'Accounts', nav_categories: 'Categories',
     nav_transactions: 'Transactions', nav_reports: 'Reports', nav_settings: 'Settings',
-    nav_goals: 'Goals', nav_recurring: 'Recurring',
+    nav_goals: 'Goals', nav_recurring: 'Recurring', nav_calendar: 'Calendar',
     logout: 'Logout',
     totalBalance: 'Total Balance', incomeThisMonth: 'Income', expenseThisMonth: 'Expenses',
     savingsThisMonth: 'Savings', vsLastMonth: 'vs last month', thisMonth: 'This Month',
@@ -58,7 +58,7 @@ const t = {
   id: {
     nav_dashboard: 'Dasbor', nav_accounts: 'Akun', nav_categories: 'Kategori',
     nav_transactions: 'Transaksi', nav_reports: 'Laporan', nav_settings: 'Pengaturan',
-    nav_goals: 'Target', nav_recurring: 'Berulang',
+    nav_goals: 'Target', nav_recurring: 'Berulang', nav_calendar: 'Kalender',
     logout: 'Keluar',
     totalBalance: 'Total Saldo', incomeThisMonth: 'Pemasukan', expenseThisMonth: 'Pengeluaran',
     savingsThisMonth: 'Tabungan', vsLastMonth: 'vs bulan lalu', thisMonth: 'Bulan Ini',
