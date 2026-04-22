@@ -9,6 +9,7 @@ import { fetchTransactions, createTransaction, updateTransaction, deleteTransact
 import { fetchAccounts } from '../store/slices/accountSlice';
 import { fetchCategories } from '../store/slices/categorySlice';
 import { fetchDashboard } from '../store/slices/dashboardSlice';
+import useT from '../i18n/useT';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -17,6 +18,7 @@ const { RangePicker } = DatePicker;
 const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
 
 export default function Transactions() {
+  const t = useT();
   const dispatch = useDispatch();
   const { list, total, loading } = useSelector((s) => s.transactions);
   const { list: accounts } = useSelector((s) => s.accounts);
@@ -68,10 +70,10 @@ export default function Transactions() {
       const payload = { ...values, date: values.date.toISOString() };
       if (editing) {
         await dispatch(updateTransaction({ id: editing._id, data: payload })).unwrap();
-        message.success('Transaction updated');
+        message.success(t('transactionUpdated'));
       } else {
         await dispatch(createTransaction(payload)).unwrap();
-        message.success('Transaction added');
+        message.success(t('transactionAdded'));
       }
       setOpen(false);
       load(filters);
@@ -85,7 +87,7 @@ export default function Transactions() {
   const onDelete = async (id) => {
     try {
       await dispatch(deleteTransaction(id)).unwrap();
-      message.success('Transaction deleted');
+      message.success(t('transactionDeleted'));
       load(filters);
       dispatch(fetchDashboard());
       dispatch(fetchAccounts());
@@ -98,14 +100,14 @@ export default function Transactions() {
 
   const columns = [
     {
-      title: 'Date',
+      title: t('date'),
       dataIndex: 'date',
       key: 'date',
       width: 110,
       render: (d) => dayjs(d).format('DD/MM/YYYY'),
     },
     {
-      title: 'Category',
+      title: t('nav_categories'),
       dataIndex: 'categoryId',
       key: 'category',
       render: (cat) => cat ? (
@@ -113,33 +115,37 @@ export default function Transactions() {
       ) : '-',
     },
     {
-      title: 'Account',
+      title: t('account'),
       dataIndex: 'accountId',
       key: 'account',
       responsive: ['sm'],
       render: (acc) => acc ? <Tag color={acc.color} style={{ margin: 0 }}>{acc.name}</Tag> : '-',
     },
     {
-      title: 'Type',
+      title: t('type'),
       dataIndex: 'type',
       key: 'type',
       width: 90,
-      render: (t) => <Tag color={t === 'income' ? 'green' : 'red'}>{t.charAt(0).toUpperCase() + t.slice(1)}</Tag>,
+      render: (v) => (
+        <Tag color={v === 'income' ? 'green' : 'red'}>
+          {v === 'income' ? t('income') : t('expense')}
+        </Tag>
+      ),
     },
     {
-      title: 'Amount',
+      title: t('amount'),
       dataIndex: 'amount',
       key: 'amount',
       align: 'right',
       width: 140,
       render: (a, r) => (
-        <Text className={r.type === 'income' ? 'transaction-income' : 'transaction-expense'}>
+        <Text style={{ color: r.type === 'income' ? '#52c41a' : '#ff4d4f', fontWeight: 600 }}>
           {r.type === 'income' ? '+' : '-'}IDR {fmt(a)}
         </Text>
       ),
     },
     {
-      title: 'Note',
+      title: t('note'),
       dataIndex: 'note',
       key: 'note',
       responsive: ['md'],
@@ -152,7 +158,7 @@ export default function Transactions() {
       render: (_, row) => (
         <Space size={4}>
           <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Popconfirm title="Delete?" onConfirm={() => onDelete(row._id)} okText="Yes">
+          <Popconfirm title={t('deleteConfirm')} onConfirm={() => onDelete(row._id)} okText={t('yes')}>
             <Button size="small" type="text" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -163,27 +169,28 @@ export default function Transactions() {
   return (
     <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Transactions</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add Transaction</Button>
+        <Title level={4} style={{ margin: 0 }}>{t('transactionsTitle')}</Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          {t('addTransaction')}
+        </Button>
       </div>
 
-      {/* Filters */}
       <Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
         <Col xs={12} sm={6}>
           <Select
             allowClear
-            placeholder={<><FilterOutlined /> Type</>}
+            placeholder={<><FilterOutlined /> {t('filterByType')}</>}
             style={{ width: '100%' }}
             onChange={(v) => handleFilter({ type: v })}
           >
-            <Select.Option value="income">Income</Select.Option>
-            <Select.Option value="expense">Expense</Select.Option>
+            <Select.Option value="income">{t('income')}</Select.Option>
+            <Select.Option value="expense">{t('expense')}</Select.Option>
           </Select>
         </Col>
         <Col xs={12} sm={6}>
           <Select
             allowClear
-            placeholder="Account"
+            placeholder={t('filterByAccount')}
             style={{ width: '100%' }}
             onChange={(v) => handleFilter({ accountId: v })}
           >
@@ -193,7 +200,7 @@ export default function Transactions() {
         <Col xs={12} sm={6}>
           <Select
             allowClear
-            placeholder="Category"
+            placeholder={t('filterByCategory')}
             style={{ width: '100%' }}
             onChange={(v) => handleFilter({ categoryId: v })}
           >
@@ -220,7 +227,7 @@ export default function Transactions() {
           total,
           pageSize: filters.limit,
           current: filters.page,
-          showTotal: (t) => `${t} transactions`,
+          showTotal: (n) => `${n} ${t('nav_transactions').toLowerCase()}`,
           onChange: (page) => {
             const next = { ...filters, page };
             setFilters(next);
@@ -232,50 +239,50 @@ export default function Transactions() {
       />
 
       <Modal
-        title={editing ? 'Edit Transaction' : 'New Transaction'}
+        title={editing ? t('editTransaction') : t('newTransaction')}
         open={open}
         onOk={onSubmit}
         onCancel={() => setOpen(false)}
-        okText={editing ? 'Update' : 'Add'}
+        okText={editing ? t('update') : t('add')}
         destroyOnClose
       >
         <Form form={form} layout="vertical">
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+              <Form.Item name="type" label={t('type')} rules={[{ required: true }]}>
                 <Select onChange={(v) => { setTxType(v); form.setFieldValue('categoryId', undefined); }}>
-                  <Select.Option value="income">Income</Select.Option>
-                  <Select.Option value="expense">Expense</Select.Option>
+                  <Select.Option value="income">{t('income')}</Select.Option>
+                  <Select.Option value="expense">{t('expense')}</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="date" label="Date" rules={[{ required: true }]}>
+              <Form.Item name="date" label={t('date')} rules={[{ required: true }]}>
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="accountId" label="Account" rules={[{ required: true }]}>
-            <Select placeholder="Select account">
+          <Form.Item name="accountId" label={t('account')} rules={[{ required: true }]}>
+            <Select placeholder={t('selectAccount')}>
               {accounts.map((a) => <Select.Option key={a._id} value={a._id}>{a.name}</Select.Option>)}
             </Select>
           </Form.Item>
-          <Form.Item name="categoryId" label="Category" rules={[{ required: true }]}>
-            <Select placeholder="Select category">
+          <Form.Item name="categoryId" label={t('nav_categories')} rules={[{ required: true }]}>
+            <Select placeholder={t('selectCategory')}>
               {filteredCategories.map((c) => <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>)}
             </Select>
           </Form.Item>
-          <Form.Item name="amount" label="Amount (IDR)" rules={[{ required: true }]}>
+          <Form.Item name="amount" label={t('amountLabel')} rules={[{ required: true }]}>
             <InputNumber
               style={{ width: '100%' }}
               min={1}
               formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(v) => v.replace(/,/g, '')}
+              parser={(v) => Number((v || '').replace(/[^\d]/g, '')) || 0}
               placeholder="0"
             />
           </Form.Item>
-          <Form.Item name="note" label="Note">
-            <Input placeholder="Optional note" />
+          <Form.Item name="note" label={t('note')}>
+            <Input placeholder={t('note')} />
           </Form.Item>
         </Form>
       </Modal>

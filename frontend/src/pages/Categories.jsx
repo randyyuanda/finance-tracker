@@ -20,11 +20,12 @@ export default function Categories() {
   const dispatch = useDispatch();
   const { list: categories, loading } = useSelector((s) => s.categories);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
-  
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [activeTab, setActiveTab] = useState('expense');
   const [form] = Form.useForm();
+  const selectedColor = Form.useWatch('color', form);
 
   useEffect(() => { dispatch(fetchCategories()); }, [dispatch]);
 
@@ -69,9 +70,21 @@ export default function Categories() {
   };
 
   const renderList = () => {
-    if (loading) return <div style={{ padding: 40, textAlign: 'center' }}><Space size="middle"><Typography.Text type="secondary">{t('saving')}</Typography.Text></Space></div>;
+    if (loading) return (
+      <div style={{ padding: 40, textAlign: 'center' }}>
+        <Text type="secondary">{t('saving')}</Text>
+      </div>
+    );
     if (!filtered.length) return (
-      <Empty style={{ marginTop: 60 }} description={t('noData')} extra={<Button type="primary" onClick={openCreate} style={{ borderRadius: 10 }}>{t('addAccount')}</Button>} />
+      <Empty
+        style={{ marginTop: 60 }}
+        description={t('noCategoriesYet')}
+        extra={
+          <Button type="primary" onClick={openCreate} style={{ borderRadius: 10 }}>
+            {t('addCategory')}
+          </Button>
+        }
+      />
     );
     return (
       <Row gutter={[16, 16]}>
@@ -84,13 +97,22 @@ export default function Categories() {
               actions={[
                 <EditOutlined key="edit" onClick={() => openEdit(cat)} />,
                 !cat.isDefault && (
-                  <Popconfirm key="del" title={t('deleteAccountConfirm')} onConfirm={() => onDelete(cat._id)} okText={t('themeLight') === 'Light' ? 'Yes' : 'Ya'}>
+                  <Popconfirm
+                    key="del"
+                    title={t('deleteCategoryConfirm')}
+                    onConfirm={() => onDelete(cat._id)}
+                    okText={t('yes')}
+                  >
                     <DeleteOutlined style={{ color: '#ff4d4f' }} />
                   </Popconfirm>
                 ),
               ].filter(Boolean)}
             >
-              <Avatar size={44} style={{ background: cat.color + '15', color: cat.color, marginBottom: 12, border: `1px solid ${cat.color}25` }} icon={<TagOutlined />} />
+              <Avatar
+                size={44}
+                style={{ background: cat.color + '15', color: cat.color, marginBottom: 12, border: `1px solid ${cat.color}25` }}
+                icon={<TagOutlined />}
+              />
               <div>
                 <Text strong style={{ display: 'block', fontSize: 14 }}>{cat.name}</Text>
                 {cat.isDefault && <Tag style={{ marginTop: 8, fontSize: 10, borderRadius: 4 }}>Default</Tag>}
@@ -105,9 +127,9 @@ export default function Categories() {
   return (
     <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>{t('nav_categories')}</Title>
+        <Title level={4} style={{ margin: 0 }}>{t('categoriesTitle')}</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} size="large" style={{ borderRadius: 12 }}>
-          {t('addAccount')}
+          {t('addCategory')}
         </Button>
       </div>
 
@@ -116,30 +138,30 @@ export default function Categories() {
         onChange={setActiveTab}
         type="card"
         items={[
-          { key: 'expense', label: `${t('expenseThisMonth')} (${categories.filter((c) => c.type === 'expense').length})` },
-          { key: 'income', label: `${t('incomeThisMonth')} (${categories.filter((c) => c.type === 'income').length})` },
+          { key: 'expense', label: `${t('expense')} (${categories.filter((c) => c.type === 'expense').length})` },
+          { key: 'income', label: `${t('income')} (${categories.filter((c) => c.type === 'income').length})` },
         ]}
       />
 
       <div style={{ marginTop: 24 }}>{renderList()}</div>
 
       <Modal
-        title={<Text strong style={{ fontSize: 18 }}>{editing ? t('editAccount') : t('newAccount')}</Text>}
+        title={<Text strong style={{ fontSize: 18 }}>{editing ? t('editCategory') : t('newCategory')}</Text>}
         open={open}
         onOk={onSubmit}
         onCancel={() => setOpen(false)}
-        okText={editing ? t('saveProfile') : t('nav_accounts').slice(0,-1)}
+        okText={editing ? t('update') : t('add')}
         okButtonProps={{ size: 'large', style: { borderRadius: 10 } }}
         cancelButtonProps={{ size: 'large', style: { borderRadius: 10 } }}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="name" label={t('accountName')} rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('categoryName')} rules={[{ required: true }]}>
             <Input size="large" placeholder="e.g. Food & Drink" />
           </Form.Item>
-          <Form.Item name="type" label={t('type')} rules={[{ required: true }]}>
+          <Form.Item name="type" label={t('categoryType')} rules={[{ required: true }]}>
             <Select size="large">
-              <Select.Option value="income">{t('incomeOnly')}</Select.Option>
-              <Select.Option value="expense">{t('expenseOnly')}</Select.Option>
+              <Select.Option value="income">{t('income')}</Select.Option>
+              <Select.Option value="expense">{t('expense')}</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item name="color" label={t('color')}>
@@ -150,9 +172,9 @@ export default function Categories() {
                   onClick={() => form.setFieldValue('color', c)}
                   style={{
                     width: 32, height: 32, borderRadius: 10, background: c, cursor: 'pointer',
-                    border: form.getFieldValue('color') === c ? '3px solid #000' : '2px solid rgba(0,0,0,0.05)',
+                    border: selectedColor === c ? '3px solid #000' : '2px solid rgba(0,0,0,0.05)',
                     transition: 'all 0.2s',
-                    transform: form.getFieldValue('color') === c ? 'scale(1.1)' : 'scale(1)',
+                    transform: selectedColor === c ? 'scale(1.15)' : 'scale(1)',
                   }}
                 />
               ))}
@@ -163,4 +185,3 @@ export default function Categories() {
     </div>
   );
 }
-

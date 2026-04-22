@@ -50,17 +50,23 @@ export default function Settings() {
   };
 
   const handleAvatarChange = (info) => {
-    if (info.file.status === 'uploading') return;
-    if (info.file.status === 'done' || info.file.status === 'error' || true) {
-      // For this demo, we'll just use a random avatar or the uploaded one if it's base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAvatarUrl(reader.result);
+    const file = info.file.originFileObj;
+    if (!file) return;
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        const MAX = 200;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        setAvatarUrl(canvas.toDataURL('image/jpeg', 0.8));
       };
-      if (info.file.originFileObj) {
-        reader.readAsDataURL(info.file.originFileObj);
-      }
-    }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

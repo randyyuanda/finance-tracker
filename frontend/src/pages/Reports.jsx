@@ -6,21 +6,15 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import api from '../api/axios';
 import useT from '../i18n/useT';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const PERIODS = [
-  { value: 'alltime', label: 'All Time' },
-  { value: '1month', label: 'Last 1 Month' },
-  { value: '3months', label: 'Last 3 Months' },
-  { value: '1year', label: 'Last 1 Year' },
-  { value: '2years', label: 'Last 2 Years' },
-];
-
-const TYPES = [
-  { value: '', label: 'All (Income + Expense)' },
-  { value: 'income', label: 'Income Only' },
-  { value: 'expense', label: 'Expense Only' },
+  { value: 'alltime', key: 'allTime' },
+  { value: '1month', key: 'last1Month' },
+  { value: '3months', key: 'last3Months' },
+  { value: '1year', key: 'last1Year' },
+  { value: '2years', key: 'last2Years' },
 ];
 
 const fmt = (n) => new Intl.NumberFormat('id-ID').format(Math.round(n));
@@ -77,15 +71,19 @@ export default function Reports() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      setError('Failed to generate report. Please try again.');
+      setError(t('saveFailed'));
     } finally {
       setLoading(false);
     }
   };
 
-  const renderChart = (data, title, color) => (
+  const renderChart = (data, title) => (
     <Card className="stat-card" style={{ height: '100%' }} title={<Text strong>{title}</Text>}>
-      {dataLoading ? <Skeleton active /> : data.length === 0 ? <Empty description={t('noData')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+      {dataLoading ? (
+        <Skeleton active />
+      ) : data.length === 0 ? (
+        <Empty description={t('noData')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
         <div style={{ height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -96,15 +94,15 @@ export default function Reports() {
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
+                outerRadius={90}
+                paddingAngle={4}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip formatter={(v) => `IDR ${fmt(v)}`} />
-              <Legend verticalAlign="bottom" height={36}/>
+              <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -124,7 +122,9 @@ export default function Reports() {
             <div style={{ marginBottom: 16 }}>
               <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('period')}</Text>
               <Select value={period} onChange={setPeriod} style={{ width: '100%' }} size="large">
-                {PERIODS.map((p) => <Option key={p.value} value={p.value}>{t(`last${p.value === 'alltime' ? 'AllTime' : p.value.charAt(0).toUpperCase() + p.value.slice(1)}`) || p.label}</Option>)}
+                {PERIODS.map((p) => (
+                  <Option key={p.value} value={p.value}>{t(p.key)}</Option>
+                ))}
               </Select>
             </div>
 
@@ -156,9 +156,9 @@ export default function Reports() {
             >
               {t('downloadExcel')}
             </Button>
-            
+
             <Divider style={{ margin: '24px 0 16px 0' }} />
-            
+
             <Text type="secondary" style={{ fontSize: 13 }}>
               {t('reportIncludes')}
               <ul style={{ marginTop: 8, paddingLeft: 20 }}>
@@ -180,15 +180,15 @@ export default function Reports() {
               {renderChart(breakdown.income, t('incomeByCategory'))}
             </Col>
           </Row>
-          
+
           <Card className="stat-card" style={{ marginTop: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ background: '#e6f7ff', padding: 12, borderRadius: 12 }}>
+              <div style={{ background: '#e6f7ff', padding: 12, borderRadius: 12, flexShrink: 0 }}>
                 <PieChartOutlined style={{ fontSize: 24, color: '#1890ff' }} />
               </div>
               <div>
                 <Title level={5} style={{ margin: 0 }}>{t('reportInfo')}</Title>
-                <Text type="secondary">{t('noData') === 'No data' ? 'Analyze your spending patterns with interactive category charts.' : 'Analisis pola pengeluaran Anda dengan grafik kategori interaktif.'}</Text>
+                <Text type="secondary">{t('reportSubtitle')}</Text>
               </div>
             </div>
           </Card>
@@ -197,4 +197,3 @@ export default function Reports() {
     </div>
   );
 }
-

@@ -89,7 +89,16 @@ const addCategorySheet = (workbook, name, rows, headerColor, totalKey) => {
   if (rows.length > 0) {
     sheet.addConditionalFormatting({
       ref: `B2:B${rows.length + 1}`,
-      rules: [{ type: 'dataBar', priority: 1, gradient: true }],
+      rules: [{
+        type: 'dataBar',
+        priority: 1,
+        dataBar: {
+          cfvo: [{ type: 'min' }, { type: 'max' }],
+          color: { argb: headerColor },
+          showValue: true,
+          gradient: true,
+        },
+      }],
     });
   }
 
