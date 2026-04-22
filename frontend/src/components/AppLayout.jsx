@@ -13,7 +13,7 @@ import {
   MenuUnfoldOutlined,
   BankOutlined,
   SettingOutlined,
-  TargetOutlined,
+  AimOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -42,7 +42,7 @@ export default function AppLayout() {
     { key: '/categories', icon: <TagsOutlined />, label: t('nav_categories') },
     { key: '/transactions', icon: <SwapOutlined />, label: t('nav_transactions') },
     { key: '/reports', icon: <FileTextOutlined />, label: t('nav_reports') },
-    { key: '/goals', icon: <TargetOutlined />, label: t('nav_goals') || 'Goals' },
+    { key: '/goals', icon: <AimOutlined />, label: t('nav_goals') || 'Goals' },
     { key: '/recurring', icon: <SyncOutlined />, label: t('nav_recurring') || 'Recurring' },
     { key: '/settings', icon: <SettingOutlined />, label: t('nav_settings') },
   ];

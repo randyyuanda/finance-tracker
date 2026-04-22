@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Row, Col, Card, Progress, Button, Modal, Form, Input, InputNumber, DatePicker, ColorPicker, Typography, Space, Popconfirm, Empty, Skeleton, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TargetOutlined, CheckCircleFilled } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, AimOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGoals, addGoal, updateGoal, deleteGoal } from '../store/slices/goalSlice';
 import useT from '../i18n/useT';
@@ -116,7 +116,7 @@ export default function Goals() {
                           color: goal.color,
                           fontSize: 24
                         }}>
-                          {isDone ? <CheckCircleFilled /> : <TargetOutlined />}
+                          {isDone ? <CheckCircleFilled /> : <AimOutlined />}
                         </div>
                         <div>
                           <Title level={5} style={{ margin: 0 }}>{goal.name}</Title>
