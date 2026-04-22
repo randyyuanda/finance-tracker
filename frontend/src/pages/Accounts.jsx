@@ -46,6 +46,7 @@ export default function Accounts() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const selectedColor = Form.useWatch('color', form);
 
   useEffect(() => { dispatch(fetchAccounts()); }, [dispatch]);
 
@@ -169,10 +170,10 @@ export default function Accounts() {
             </Col>
             <Col span={12}>
               <Form.Item name="icon" label={t('icon')} rules={[{ required: true }]}>
-                <Select size="large">
-                  {Object.entries(ACCOUNT_ICONS).map(([k, Icon]) => (
-                    <Option key={k} value={k}>
-                      <Space><Icon /> {k.charAt(0).toUpperCase() + k.slice(1)}</Space>
+                <Select size="large" optionLabelProp="label">
+                  {Object.entries(ACCOUNT_ICONS).map(([k, IconComp]) => (
+                    <Option key={k} value={k} label={k.charAt(0).toUpperCase() + k.slice(1)}>
+                      <Space><IconComp /> {k.charAt(0).toUpperCase() + k.slice(1)}</Space>
                     </Option>
                   ))}
                 </Select>
@@ -182,13 +183,13 @@ export default function Accounts() {
 
           {!editing && (
             <Form.Item name="balance" label={t('initialBalance')} initialValue={0}>
-              <InputNumber 
+              <InputNumber
                 size="large"
-                style={{ width: '100%' }} 
+                style={{ width: '100%' }}
                 formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(v) => v.replace(/\D/g, '')}
-                prefix="IDR"
-                min={0} 
+                parser={(v) => Number((v || '').replace(/[^\d]/g, '')) || 0}
+                addonBefore="IDR"
+                min={0}
               />
             </Form.Item>
           )}
@@ -201,9 +202,9 @@ export default function Accounts() {
                   onClick={() => form.setFieldValue('color', c)}
                   style={{
                     width: 32, height: 32, borderRadius: 10, background: c, cursor: 'pointer',
-                    border: form.getFieldValue('color') === c ? '3px solid #000' : '2px solid rgba(0,0,0,0.05)',
+                    border: selectedColor === c ? '3px solid #000' : '2px solid rgba(0,0,0,0.05)',
                     transition: 'all 0.2s',
-                    transform: form.getFieldValue('color') === c ? 'scale(1.1)' : 'scale(1)',
+                    transform: selectedColor === c ? 'scale(1.1)' : 'scale(1)',
                   }}
                 />
               ))}
