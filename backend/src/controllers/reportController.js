@@ -54,13 +54,17 @@ exports.getCategoryBreakdown = async (req, res) => {
   }
 };
 
-const addCategorySheet = (workbook, name, rows, headerColor, totalKey) => {
+const addCategorySheet = (workbook, name, rows, headerColor) => {
   const sheet = workbook.addWorksheet(name);
+  
+  // Add FinTrack footer
+  sheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
+
   sheet.columns = [
     { header: 'Category', key: 'name', width: 28 },
     { header: 'Amount (IDR)', key: 'total', width: 20 },
     { header: 'Transactions', key: 'count', width: 16 },
-    { header: '%', key: 'pct', width: 10 },
+    { header: 'Visual / %', key: 'pct_val', width: 20 },
   ];
 
   const hdr = sheet.getRow(1);
@@ -72,11 +76,12 @@ const addCategorySheet = (workbook, name, rows, headerColor, totalKey) => {
   const grandTotal = rows.reduce((s, r) => s + r.total, 0);
 
   rows.forEach((row, idx) => {
+    const pct = grandTotal > 0 ? (row.total / grandTotal) : 0;
     const r = sheet.addRow({
       name: row.name,
       total: row.total,
       count: row.count,
-      pct: grandTotal > 0 ? (row.total / grandTotal * 100).toFixed(1) + '%' : '0%',
+      pct_val: pct,
     });
     if (idx % 2 === 0) {
       r.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
@@ -85,9 +90,24 @@ const addCategorySheet = (workbook, name, rows, headerColor, totalKey) => {
   });
 
   sheet.getColumn('total').numFmt = '#,##0';
-  sheet.getColumn('pct').alignment = { horizontal: 'center' };
+  sheet.getColumn('pct_val').numFmt = '0.0%';
+  sheet.getColumn('pct_val').alignment = { horizontal: 'center' };
 
-  const totalRow = sheet.addRow({ name: 'TOTAL', total: grandTotal, count: rows.reduce((s, r) => s + r.count, 0), pct: '100%' });
+  // Add Data Bar "Chart"
+  const lastRow = rows.length + 1;
+  sheet.addConditionalFormatting({
+    ref: `D2:D${lastRow}`,
+    rules: [
+      {
+        type: 'dataBar',
+        color: { argb: headerColor },
+        min: { type: 'num', value: 0 },
+        max: { type: 'num', value: 1 },
+      }
+    ]
+  });
+
+  const totalRow = sheet.addRow({ name: 'TOTAL', total: grandTotal, count: rows.reduce((s, r) => s + r.count, 0), pct_val: 1 });
   totalRow.font = { bold: true };
   totalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6E6E6' } };
 
@@ -137,6 +157,7 @@ exports.downloadReport = async (req, res) => {
 
     // Sheet 1: Transactions
     const txSheet = workbook.addWorksheet('Transactions');
+    txSheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
     txSheet.columns = [
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Account', key: 'account', width: 20 },
@@ -167,6 +188,7 @@ exports.downloadReport = async (req, res) => {
 
     // Sheet 2: Summary
     const summarySheet = workbook.addWorksheet('Summary');
+    summarySheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
     summarySheet.columns = [
       { header: 'Metric', key: 'metric', width: 25 },
       { header: 'Amount (IDR)', key: 'amount', width: 20 },
