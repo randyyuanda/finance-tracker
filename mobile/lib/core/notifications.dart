@@ -1,5 +1,5 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -16,8 +16,13 @@ class NotificationService {
     if (_initialized) return;
 
     tz.initializeTimeZones();
-    final deviceTz = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(deviceTz));
+    try {
+      const tzChannel = MethodChannel('com.fintrack/timezone');
+      final String deviceTz = await tzChannel.invokeMethod('getLocalTimezone');
+      tz.setLocalLocation(tz.getLocation(deviceTz));
+    } catch (_) {
+      tz.setLocalLocation(tz.UTC);
+    }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _plugin.initialize(
