@@ -17,18 +17,37 @@ import Goals from './pages/Goals';
 import RecurringTransactions from './pages/RecurringTransactions';
 import TransactionCalendar from './pages/Calendar';
 import Reminders from './pages/Reminders';
+import Admin from './pages/Admin';
+
+const Spinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <Spin size="large" />
+  </div>
+);
 
 function PrivateRoute({ children }) {
   const { token, user, loading } = useSelector((s) => s.auth);
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
+  if (loading) return <Spinner />;
   if (!token) return <Navigate to="/login" replace />;
-  if (!user) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
+  if (!user) return <Spinner />;
+  // Admin users must use the /admin route
+  if (user.isAdmin) return <Navigate to="/admin" replace />;
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { token, user, loading } = useSelector((s) => s.auth);
+  if (loading) return <Spinner />;
+  if (!token) return <Navigate to="/login" replace />;
+  if (!user) return <Spinner />;
+  if (!user.isAdmin) return <Navigate to="/" replace />;
   return children;
 }
 
 function PublicRoute({ children }) {
-  const { token } = useSelector((s) => s.auth);
-  return token ? <Navigate to="/" replace /> : children;
+  const { token, user } = useSelector((s) => s.auth);
+  if (!token) return children;
+  return <Navigate to={user?.isAdmin ? '/admin' : '/'} replace />;
 }
 
 export default function App() {
@@ -45,10 +64,12 @@ export default function App() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
-        <Route
-          path="/"
-          element={<PrivateRoute><AppLayout /></PrivateRoute>}
-        >
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+
+        {/* Regular user app */}
+        <Route path="/" element={<PrivateRoute><AppLayout /></PrivateRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="categories" element={<Categories />} />

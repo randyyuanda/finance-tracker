@@ -5,7 +5,10 @@ const session = require('express-session');
 const passport = require('passport');
 const morgan = require('morgan');
 const prisma = require('./lib/prisma');
+const seedAdmin = require('./utils/seedAdmin');
 require('./config/passport');
+
+seedAdmin();
 
 const app = express();
 
@@ -45,6 +48,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/goals', require('./routes/goals'));
 app.use('/api/recurring', require('./routes/recurring'));
 app.use('/api/reminders', require('./routes/reminders'));
+app.use('/api/admin', require('./routes/admin'));
 
 app.get('/api/health', async (_, res) => {
   try {
