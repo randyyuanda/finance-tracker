@@ -35,11 +35,13 @@ exports.createAccount = async (req, res) => {
 
 exports.updateAccount = async (req, res) => {
   try {
-    const { balance, userId, ...data } = req.body;
+    const { userId, ...data } = req.body;
     const existing = await prisma.account.findFirst({
       where: { id: req.params.id, userId: req.user._id },
     });
     if (!existing) return res.status(404).json({ message: 'Account not found' });
+
+    if (data.balance !== undefined) data.balance = Number(data.balance);
 
     const account = await prisma.account.update({
       where: { id: req.params.id },

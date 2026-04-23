@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import {
   Layout, Typography, Button, Card, Row, Col, Table, Avatar, Tag, Modal,
   Form, Input, DatePicker, Select, Space, Badge, Statistic, Checkbox,
-  Popconfirm, message, Divider, Tooltip, Segmented,
+  Popconfirm, message, Divider, Segmented,
 } from 'antd';
 import {
   UserOutlined, LogoutOutlined, BellOutlined, TeamOutlined,
@@ -16,21 +16,13 @@ import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 
-const TYPE_OPTIONS = [
-  { value: 'custom', label: 'Custom' },
-  { value: 'bill', label: 'Bill Payment' },
-  { value: 'goal', label: 'Goal' },
-  { value: 'recurring', label: 'Recurring' },
-];
 
 const REPEAT_OPTIONS = [
-  { value: 'none', label: 'No repeat' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'yearly', label: 'Yearly' },
+  { value: 'none', label: 'One time' },
+  { value: 'daily', label: 'Every day' },
+  { value: 'weekly', label: 'Every week' },
+  { value: 'monthly', label: 'Every month' },
 ];
 
 export default function Admin() {
@@ -79,7 +71,7 @@ export default function Admin() {
     setTargetMode(userId ? 'select' : 'all');
     setSelectedUserIds(userId ? [userId] : []);
     form.resetFields();
-    form.setFieldsValue({ type: 'custom', repeatType: 'none' });
+    form.setFieldsValue({ repeatType: 'none' });
     setBroadcastOpen(true);
   };
 
@@ -101,8 +93,10 @@ export default function Admin() {
       }
 
       const res = await api.post('/admin/reminders/broadcast', {
-        ...values,
-        reminderDate: values.reminderDate.toISOString(),
+        title: values.title,
+        note: values.note,
+        scheduledAt: values.scheduledAt.toISOString(),
+        repeatType: values.repeatType || 'none',
         targetUserIds,
       });
 
@@ -169,7 +163,7 @@ export default function Admin() {
           onClick={() => openBroadcast(row.id)}
           style={{ borderRadius: 6 }}
         >
-          Send Reminder
+          Notify
         </Button>
       ),
     },
@@ -271,8 +265,8 @@ export default function Admin() {
           <Space>
             <BellOutlined style={{ color: primaryColor }} />
             {singleTargetId
-              ? `Send Reminder to ${users.find((u) => u.id === singleTargetId)?.name ?? 'User'}`
-              : 'Broadcast Reminder'}
+              ? `Send Notification to ${users.find((u) => u.id === singleTargetId)?.name ?? 'User'}`
+              : 'Broadcast Notification'}
           </Space>
         }
         open={broadcastOpen}
@@ -286,29 +280,25 @@ export default function Admin() {
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="title" label="Reminder Title" rules={[{ required: true, message: 'Enter a title' }]}>
+          <Form.Item name="title" label="Notification Title" rules={[{ required: true, message: 'Enter a title' }]}>
             <Input placeholder="e.g. Monthly payment due, App update available" />
           </Form.Item>
 
-          <Form.Item name="reminderDate" label="Reminder Date & Time" rules={[{ required: true, message: 'Select date' }]}>
-            <DatePicker showTime style={{ width: '100%' }} format="YYYY-MM-DD HH:mm" />
-          </Form.Item>
-
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="type" label="Type">
-                <Select options={TYPE_OPTIONS} />
+            <Col span={14}>
+              <Form.Item name="scheduledAt" label="Scheduled Date & Time" rules={[{ required: true, message: 'Select date' }]}>
+                <DatePicker showTime style={{ width: '100%' }} format="YYYY-MM-DD HH:mm" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="repeatType" label="Repeat">
+            <Col span={10}>
+              <Form.Item name="repeatType" label="Repeat" initialValue="none">
                 <Select options={REPEAT_OPTIONS} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="note" label="Note (optional)">
-            <TextArea rows={2} placeholder="Optional message shown with the reminder…" />
+          <Form.Item name="note" label="Message (optional)">
+            <Input.TextArea rows={2} placeholder="Optional message shown with the notification…" />
           </Form.Item>
 
           {/* Target selection — hidden when sending to a single user */}

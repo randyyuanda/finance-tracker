@@ -21,10 +21,24 @@ class _AccountsScreenState extends State<AccountsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<AccountProvider>().fetchAll());
   }
 
+  static const _iconOptions = [
+    ('wallet', Icons.account_balance_wallet_outlined, 'Wallet'),
+    ('bank', Icons.account_balance_outlined, 'Bank'),
+    ('money', Icons.attach_money, 'Money'),
+    ('credit_card', Icons.credit_card_outlined, 'Card'),
+    ('savings', Icons.savings_outlined, 'Savings'),
+    ('investment', Icons.trending_up, 'Invest'),
+  ];
+
+  static IconData _iconData(String icon) {
+    return _iconOptions.firstWhere((e) => e.$1 == icon, orElse: () => _iconOptions.first).$2;
+  }
+
   void _showForm({Account? account}) {
     final nameCtrl = TextEditingController(text: account?.name);
     final balanceCtrl = TextEditingController(text: account?.balance.toStringAsFixed(0));
     String type = account?.type ?? 'cash';
+    String selectedIcon = account?.icon ?? 'wallet';
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -64,9 +78,40 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: balanceCtrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(labelText: 'Initial Balance (IDR)'),
+                  keyboardType: const TextInputType.numberWithOptions(signed: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^-?\d*'))],
+                  decoration: const InputDecoration(
+                    labelText: 'Balance (IDR)',
+                    helperText: 'Use negative value for debt/overdraft',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Icon', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: _iconOptions.map((opt) {
+                    final isSelected = selectedIcon == opt.$1;
+                    return GestureDetector(
+                      onTap: () => setLocal(() => selectedIcon = opt.$1),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isSelected ? kPrimaryColor.withValues(alpha: 0.15) : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: isSelected ? Border.all(color: kPrimaryColor, width: 2) : null,
+                            ),
+                            child: Icon(opt.$2, color: isSelected ? kPrimaryColor : Colors.grey.shade500, size: 22),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(opt.$3, style: TextStyle(fontSize: 10, color: isSelected ? kPrimaryColor : Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
@@ -78,6 +123,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                         'name': nameCtrl.text.trim(),
                         'type': type,
                         'balance': double.tryParse(balanceCtrl.text) ?? 0,
+                        'icon': selectedIcon,
                       };
                       final provider = context.read<AccountProvider>();
                       if (account == null) {
@@ -132,8 +178,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
                           leading: Container(
                             width: 44,
                             height: 44,
-                            decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                            child: Icon(Icons.account_balance_wallet_outlined, color: color),
+                            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+                            child: Icon(_iconData(acc.icon), color: color),
                           ),
                           title: Text(acc.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: Text(acc.type, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),

@@ -9,6 +9,8 @@ class NotificationService {
 
   static const _channelId = 'fintrack_reminders';
   static const _channelName = 'Reminders';
+  static const _adminChannelId = 'fintrack_admin';
+  static const _adminChannelName = 'Announcements';
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -61,6 +63,53 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  static int _adminNotifId(String id) => ('admin_$id').hashCode.abs();
+
+  static DateTimeComponents? _repeatComponents(String repeatType) {
+    switch (repeatType) {
+      case 'daily':   return DateTimeComponents.time;
+      case 'weekly':  return DateTimeComponents.dayOfWeekAndTime;
+      case 'monthly': return DateTimeComponents.dayOfMonthAndTime;
+      default:        return null;
+    }
+  }
+
+  /// Schedule an admin (broadcast) notification. Does not appear in reminder list.
+  static Future<void> scheduleAdmin({
+    required String id,
+    required String title,
+    String? body,
+    required DateTime scheduledAt,
+    String repeatType = 'none',
+  }) async {
+    if (!_initialized) return;
+
+    final when = tz.TZDateTime.from(scheduledAt, tz.local);
+    // For past one-time notifications skip; repeating ones the OS reschedules to next occurrence
+    if (repeatType == 'none' && when.isBefore(tz.TZDateTime.now(tz.local))) return;
+
+    await _plugin.zonedSchedule(
+      _adminNotifId(id),
+      '📢 $title',
+      body?.isNotEmpty == true ? body : 'Message from FinTrack',
+      when,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _adminChannelId,
+          _adminChannelName,
+          channelDescription: 'Announcements from FinTrack',
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: _repeatComponents(repeatType),
     );
   }
 

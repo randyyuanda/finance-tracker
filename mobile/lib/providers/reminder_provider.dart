@@ -103,6 +103,22 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> checkAdminNotifications() async {
+    try {
+      final res = await ApiClient.dio.get('/notifications/admin');
+      final notifications = (res.data as List).cast<Map<String, dynamic>>();
+      for (final n in notifications) {
+        await NotificationService.scheduleAdmin(
+          id: n['id'] as String,
+          title: n['title'] as String,
+          body: n['note'] as String?,
+          scheduledAt: DateTime.parse(n['scheduledAt'] as String),
+          repeatType: n['repeatType'] as String? ?? 'none',
+        );
+      }
+    } catch (_) {}
+  }
+
   Future<bool> delete(String id) async {
     try {
       await ApiClient.dio.delete('/reminders/$id');

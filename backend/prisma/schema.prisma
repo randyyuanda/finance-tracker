@@ -27,6 +27,7 @@ model User {
   recurringTransactions RecurringTransaction[]
   goals                 Goal[]
   reminders             Reminder[]
+  adminNotifications    AdminNotification[]
 }
 
 model Account {
@@ -141,4 +142,19 @@ model Reminder {
 
   @@index([userId, reminderDate])
   @@index([userId, isCompleted])
+}
+
+model AdminNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  note        String?
+  scheduledAt DateTime
+  repeatType  String   @default("none") // none | daily | weekly | monthly
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
 }
