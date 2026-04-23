@@ -44,6 +44,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/goals', require('./routes/goals'));
 app.use('/api/recurring', require('./routes/recurring'));
+app.use('/api/reminders', require('./routes/reminders'));
 
 app.get('/api/health', async (_, res) => {
   try {

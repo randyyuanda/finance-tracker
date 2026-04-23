@@ -16,6 +16,7 @@ import Settings from './pages/Settings';
 import Goals from './pages/Goals';
 import RecurringTransactions from './pages/RecurringTransactions';
 import TransactionCalendar from './pages/Calendar';
+import Reminders from './pages/Reminders';
 
 function PrivateRoute({ children }) {
   const { token, user, loading } = useSelector((s) => s.auth);
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="goals" element={<Goals />} />
           <Route path="recurring" element={<RecurringTransactions />} />
           <Route path="calendar" element={<TransactionCalendar />} />
+          <Route path="reminders" element={<Reminders />} />
         </Route>
       </Routes>
     </BrowserRouter>

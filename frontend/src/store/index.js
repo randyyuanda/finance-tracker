@@ -7,6 +7,7 @@ import dashboardReducer from './slices/dashboardSlice';
 import settingsReducer from './slices/settingsSlice';
 import goalReducer from './slices/goalSlice';
 import recurringReducer from './slices/recurringSlice';
+import reminderReducer from './slices/reminderSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,5 +19,6 @@ export const store = configureStore({
     settings: settingsReducer,
     goals: goalReducer,
     recurring: recurringReducer,
+    reminders: reminderReducer,
   },
 });

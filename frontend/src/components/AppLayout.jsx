@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Button, Drawer, Typography } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Drawer, Typography, Badge, List, Popover } from 'antd';
 import {
   DashboardOutlined,
   WalletOutlined,
@@ -16,10 +16,16 @@ import {
   AimOutlined,
   SyncOutlined,
   CalendarOutlined,
+  BellOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
+import { fetchReminders } from '../store/slices/reminderSlice';
 import useT from '../i18n/useT';
+import useReminderNotifications from '../hooks/useReminderNotifications';
+import dayjs from 'dayjs';
 
 const { Sider, Header, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -33,9 +39,25 @@ export default function AppLayout() {
   const primaryColor = useSelector((s) => s.settings.primaryColor);
   const themeMode = useSelector((s) => s.settings.themeMode);
   
+  const { reminders } = useSelector((s) => s.reminders);
+  useReminderNotifications();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => { dispatch(fetchReminders()); }, [dispatch]);
+
+  const alertReminders = useMemo(() => {
+    const now = dayjs();
+    return reminders
+      .filter((r) => !r.isCompleted && dayjs(r.reminderDate).isBefore(now.add(7, 'day')))
+      .slice(0, 5);
+  }, [reminders]);
+
+  const overdueCount = useMemo(
+    () => reminders.filter((r) => !r.isCompleted && dayjs(r.reminderDate).isBefore(dayjs())).length,
+    [reminders]
+  );
 
   const NAV_ITEMS = [
     { key: '/', icon: <DashboardOutlined />, label: t('nav_dashboard') },
@@ -46,6 +68,7 @@ export default function AppLayout() {
     { key: '/calendar', icon: <CalendarOutlined />, label: t('nav_calendar') || 'Calendar' },
     { key: '/goals', icon: <AimOutlined />, label: t('nav_goals') || 'Goals' },
     { key: '/recurring', icon: <SyncOutlined />, label: t('nav_recurring') || 'Recurring' },
+    { key: '/reminders', icon: <BellOutlined />, label: 'Reminders' },
     { key: '/settings', icon: <SettingOutlined />, label: t('nav_settings') },
   ];
 
@@ -141,6 +164,49 @@ export default function AppLayout() {
             onClick={() => isMobile ? setMobileOpen(true) : setCollapsed(!collapsed)}
             style={{ fontSize: 18 }}
           />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Popover
+              placement="bottomRight"
+              trigger="click"
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Reminders</span>
+                  <Button type="link" size="small" onClick={() => navigate('/reminders')} style={{ padding: 0 }}>
+                    View all
+                  </Button>
+                </div>
+              }
+              content={
+                alertReminders.length === 0 ? (
+                  <div style={{ padding: '12px 0', textAlign: 'center', color: '#999' }}>No upcoming reminders</div>
+                ) : (
+                  <List
+                    size="small"
+                    style={{ width: 280 }}
+                    dataSource={alertReminders}
+                    renderItem={(r) => {
+                      const isOverdue = dayjs(r.reminderDate).isBefore(dayjs());
+                      return (
+                        <List.Item style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => navigate('/reminders')}>
+                          <List.Item.Meta
+                            avatar={isOverdue
+                              ? <ExclamationCircleOutlined style={{ color: '#ff4d4f', fontSize: 16, marginTop: 2 }} />
+                              : <ClockCircleOutlined style={{ color: primaryColor, fontSize: 16, marginTop: 2 }} />
+                            }
+                            title={<span style={{ fontSize: 13 }}>{r.title}</span>}
+                            description={<span style={{ fontSize: 12 }}>{dayjs(r.reminderDate).format('MMM D, HH:mm')}</span>}
+                          />
+                        </List.Item>
+                      );
+                    }}
+                  />
+                )
+              }
+            >
+              <Badge count={overdueCount} size="small">
+                <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} />
+              </Badge>
+            </Popover>
           <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 12px', borderRadius: 12, transition: 'background 0.3s' }} className="user-dropdown-hover">
               <Avatar 
@@ -154,6 +220,7 @@ export default function AppLayout() {
               </Text>
             </div>
           </Dropdown>
+          </div>
         </Header>
 
         <Content style={{ padding: isMobile ? '12px' : '24px', minHeight: 'calc(100vh - 128px)', overflow: 'auto' }}>
