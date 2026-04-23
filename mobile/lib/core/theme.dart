@@ -13,7 +13,7 @@ ThemeData lightTheme() {
       brightness: Brightness.light,
     ),
     textTheme: GoogleFonts.interTextTheme(),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: Colors.white,
@@ -73,7 +73,7 @@ ThemeData darkTheme() {
       brightness: Brightness.dark,
     ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: const Color(0xFF1E1E2E),
