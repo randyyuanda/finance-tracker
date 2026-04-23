@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../main.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/category_provider.dart';
@@ -29,12 +30,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   void _load() => context.read<TransactionProvider>().fetchAll(reset: true, type: _filterType);
 
-  void _addTransaction() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-    );
-    if (result == true) _load();
+  Future<void> _addTransaction() async {
+    final result = await Navigator.push<bool>(context, slideRoute(const AddTransactionScreen()));
+    if (result == true && mounted) _load();
   }
 
   @override
@@ -47,14 +45,36 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         actions: [
           PopupMenuButton<String?>(
             icon: const Icon(Icons.filter_list),
+            tooltip: 'Filter',
             onSelected: (v) {
               setState(() => _filterType = v);
               _load();
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: null, child: Text('All')),
-              const PopupMenuItem(value: 'income', child: Text('Income')),
-              const PopupMenuItem(value: 'expense', child: Text('Expense')),
+              PopupMenuItem(
+                value: null,
+                child: Row(children: [
+                  Icon(Icons.list, size: 18, color: _filterType == null ? Theme.of(context).colorScheme.primary : null),
+                  const SizedBox(width: 8),
+                  const Text('All'),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'income',
+                child: Row(children: [
+                  Icon(Icons.arrow_downward_rounded, size: 18, color: _filterType == 'income' ? Colors.green : null),
+                  const SizedBox(width: 8),
+                  const Text('Income'),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'expense',
+                child: Row(children: [
+                  Icon(Icons.arrow_upward_rounded, size: 18, color: _filterType == 'expense' ? Colors.red : null),
+                  const SizedBox(width: 8),
+                  const Text('Expense'),
+                ]),
+              ),
             ],
           ),
         ],
@@ -74,27 +94,31 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: provider.transactions.length,
-                    itemBuilder: (_, i) => TransactionTile(
-                      transaction: provider.transactions[i],
-                      onDelete: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Delete transaction?'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed == true) {
-                          context.read<TransactionProvider>().delete(provider.transactions[i].id);
-                        }
-                      },
-                    ),
+                    itemBuilder: (_, i) {
+                      final tx = provider.transactions[i];
+                      return TransactionTile(
+                        transaction: tx,
+                        onDelete: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Delete transaction?'),
+                              content: const Text('This cannot be undone.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true && context.mounted) {
+                            await context.read<TransactionProvider>().delete(tx.id);
+                          }
+                        },
+                      );
+                    },
                   ),
                 ),
       floatingActionButton: FloatingActionButton(

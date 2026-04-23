@@ -1,13 +1,35 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/storage.dart';
 import '../../core/theme.dart';
+import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../accounts/accounts_screen.dart';
 import '../recurring/recurring_screen.dart';
+import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
-class MoreScreen extends StatelessWidget {
+class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
+
+  @override
+  State<MoreScreen> createState() => _MoreScreenState();
+}
+
+class _MoreScreenState extends State<MoreScreen> {
+  String? _localAvatarPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final path = await Storage.getLocalAvatar();
+    if (mounted) setState(() => _localAvatarPath = path);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,18 +40,27 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Profile card
+          // ── Profile card ──────────────────────────────────────────
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: kPrimaryColor,
-                    child: Text(
-                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                  GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(context, slideRoute(const SettingsScreen()));
+                      _loadAvatar();
+                    },
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: kPrimaryColor,
+                      backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
+                      child: _localAvatarPath == null
+                          ? Text(
+                              user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -44,34 +75,48 @@ class MoreScreen extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    onPressed: () async {
+                      await Navigator.push(context, slideRoute(const SettingsScreen()));
+                      _loadAvatar();
+                    },
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 8),
+
           _Section(title: 'Finance', items: [
             _MenuItem(
               icon: Icons.account_balance_wallet_outlined,
               label: 'Accounts',
               color: kPrimaryColor,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsScreen())),
+              onTap: () => Navigator.push(context, slideRoute(const AccountsScreen())),
             ),
             _MenuItem(
               icon: Icons.autorenew,
               label: 'Recurring Transactions',
               color: const Color(0xFF722ED1),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecurringScreen())),
+              onTap: () => Navigator.push(context, slideRoute(const RecurringScreen())),
+            ),
+            _MenuItem(
+              icon: Icons.bar_chart_outlined,
+              label: 'Reports & Export',
+              color: const Color(0xFF13C2C2),
+              onTap: () => Navigator.push(context, slideRoute(const ReportsScreen())),
             ),
           ]),
           const SizedBox(height: 8),
+
           _Section(title: 'App', items: [
             _MenuItem(
               icon: Icons.settings_outlined,
               label: 'Settings',
               color: Colors.grey.shade600,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+              onTap: () async {
+                await Navigator.push(context, slideRoute(const SettingsScreen()));
+                _loadAvatar();
+              },
             ),
             _MenuItem(
               icon: Icons.logout,
@@ -84,7 +129,9 @@ class MoreScreen extends StatelessWidget {
                     title: const Text('Sign out?'),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 );
@@ -111,16 +158,19 @@ class _Section extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-            child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+            child: Text(title,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
           ),
           Card(
             child: Column(
-              children: List.generate(items.length, (i) => Column(
-                children: [
+              children: List.generate(
+                items.length,
+                (i) => Column(children: [
                   items[i],
-                  if (i < items.length - 1) Divider(height: 1, indent: 56, endIndent: 16, color: Colors.grey.shade100),
-                ],
-              )),
+                  if (i < items.length - 1)
+                    Divider(height: 1, indent: 56, endIndent: 16, color: Colors.grey.shade100),
+                ]),
+              ),
             ),
           ),
         ],
@@ -140,10 +190,7 @@ class _MenuItem extends StatelessWidget {
         leading: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(9),
-          ),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
           child: Icon(icon, color: color, size: 18),
         ),
         title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),

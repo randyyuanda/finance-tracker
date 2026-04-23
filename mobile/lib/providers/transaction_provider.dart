@@ -29,7 +29,21 @@ class TransactionProvider extends ChangeNotifier {
 
       final res = await ApiClient.dio.get('/transactions', queryParameters: params);
       final data = res.data;
-      final list = (data['transactions'] ?? data as List)
+
+      List<dynamic> rawList;
+      if (data is Map) {
+        rawList = (data['transactions'] as List?) ?? [];
+        _total = (data['total'] as num?)?.toInt() ?? rawList.length;
+      } else if (data is List) {
+        rawList = data;
+        _total = rawList.length;
+      } else {
+        rawList = [];
+        _total = 0;
+      }
+
+      final list = rawList
+          .whereType<Map<String, dynamic>>()
           .map((j) => Transaction.fromJson(j))
           .toList();
 
@@ -38,7 +52,6 @@ class TransactionProvider extends ChangeNotifier {
       } else {
         _transactions.addAll(list);
       }
-      _total = data['total'] ?? list.length;
       _page++;
       _error = null;
     } catch (e) {
@@ -51,7 +64,6 @@ class TransactionProvider extends ChangeNotifier {
   Future<bool> create(Map<String, dynamic> data) async {
     try {
       await ApiClient.dio.post('/transactions', data: data);
-      await fetchAll(reset: true);
       return true;
     } catch (e) {
       _error = parseError(e);

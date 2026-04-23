@@ -82,7 +82,8 @@ class NotificationService {
     }
   }
 
-  /// Schedule an admin (broadcast) notification. Does not appear in reminder list.
+  /// Schedule an admin broadcast notification.
+  /// One-time past broadcasts fire immediately (5s). Repeating uses OS-level repeat.
   static Future<void> scheduleAdmin({
     required String id,
     required String title,
@@ -92,30 +93,54 @@ class NotificationService {
   }) async {
     if (!_initialized) return;
 
-    final when = tz.TZDateTime.from(scheduledAt, tz.local);
-    // For past one-time notifications skip; repeating ones the OS reschedules to next occurrence
-    if (repeatType == 'none' && when.isBefore(tz.TZDateTime.now(tz.local))) return;
+    final now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime when = tz.TZDateTime.from(scheduledAt, tz.local);
 
-    await _plugin.zonedSchedule(
-      _adminNotifId(id),
-      '📢 $title',
-      body?.isNotEmpty == true ? body : 'Message from FinTrack',
-      when,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _adminChannelId,
-          _adminChannelName,
-          channelDescription: 'Announcements from FinTrack',
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: true,
+    if (repeatType == 'none') {
+      // Past one-time broadcast → fire in 5 seconds so user sees it immediately
+      if (when.isBefore(now)) when = now.add(const Duration(seconds: 5));
+      await _plugin.zonedSchedule(
+        _adminNotifId(id),
+        '📢 $title',
+        body?.isNotEmpty == true ? body : 'Message from FinTrack',
+        when,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _adminChannelId,
+            _adminChannelName,
+            channelDescription: 'Announcements from FinTrack',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: _repeatComponents(repeatType),
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } else {
+      // Repeating: OS fires at next occurrence automatically
+      await _plugin.zonedSchedule(
+        _adminNotifId(id),
+        '📢 $title',
+        body?.isNotEmpty == true ? body : 'Message from FinTrack',
+        when,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _adminChannelId,
+            _adminChannelName,
+            channelDescription: 'Announcements from FinTrack',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: _repeatComponents(repeatType),
+      );
+    }
   }
 
   /// Cancel a previously scheduled notification.

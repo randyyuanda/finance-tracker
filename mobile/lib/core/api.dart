@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'storage.dart';
 
-const String kApiBaseUrl = 'https://fintech-api.vercel.app/api';
+const String kApiBaseUrl = 'https://fintech-api-randyyuandas-projects.vercel.app/api';
 
 class ApiClient {
   static Dio? _instance;

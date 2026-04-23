@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,17 +17,73 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
   bool _editing = false;
+  String? _localAvatarPath;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl.text = context.read<AuthProvider>().user?.name ?? '';
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final path = await Storage.getLocalAvatar();
+    if (mounted) setState(() => _localAvatarPath = path);
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              if (_localAvatarPath != null)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
+                  onTap: () => Navigator.pop(context, null),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null && _localAvatarPath != null) {
+      await Storage.clearLocalAvatar();
+      setState(() => _localAvatarPath = null);
+      return;
+    }
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: source, imageQuality: 85, maxWidth: 512);
+    if (picked != null) {
+      await Storage.saveLocalAvatar(picked.path);
+      setState(() => _localAvatarPath = picked.path);
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -42,6 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -59,35 +120,122 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // ── Avatar ────────────────────────────────────────────────
           Center(
-            child: CircleAvatar(
-              radius: 44,
-              backgroundColor: kPrimaryColor,
-              child: Text(
-                user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w700),
-              ),
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundColor: kPrimaryColor,
+                    backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
+                    child: _localAvatarPath == null
+                        ? Text(
+                            user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
+                            style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w700),
+                          )
+                        : null,
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: kPrimaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text('Tap to change photo',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          ),
           const SizedBox(height: 24),
+
+          // ── Profile info ──────────────────────────────────────────
+          _SectionLabel(label: 'Profile'),
+          const SizedBox(height: 8),
           if (_editing) ...[
             TextFormField(
               controller: _nameCtrl,
               decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
             ),
             const SizedBox(height: 16),
-          ] else ...[
+          ] else
             _InfoRow(label: 'Name', value: user?.name ?? ''),
-          ],
           _InfoRow(label: 'Email', value: user?.email ?? ''),
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 28),
+
+          // ── Appearance ────────────────────────────────────────────
+          _SectionLabel(label: 'Appearance'),
+          const SizedBox(height: 8),
+          _SettingCard(
+            icon: Icons.brightness_6_outlined,
+            iconColor: const Color(0xFFF4A935),
+            title: 'Theme',
+            trailing: SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode, size: 16)),
+                ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.phone_android, size: 16)),
+                ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode, size: 16)),
+              ],
+              selected: {themeProvider.themeMode},
+              onSelectionChanged: (s) => themeProvider.setThemeMode(s.first),
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          _SettingCard(
+            icon: Icons.language_outlined,
+            iconColor: const Color(0xFF1677FF),
+            title: 'Language',
+            trailing: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: themeProvider.language,
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: 'en', child: Text('English')),
+                  DropdownMenuItem(value: 'id', child: Text('Indonesia')),
+                ],
+                onChanged: (v) {
+                  if (v != null) themeProvider.setLanguage(v);
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Danger zone ───────────────────────────────────────────
+          _SectionLabel(label: 'Account'),
+          const SizedBox(height: 8),
           ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            tileColor: kExpenseColor.withValues(alpha: 0.07),
             leading: Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(color: kExpenseColor.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
+              decoration: BoxDecoration(color: kExpenseColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
               child: const Icon(Icons.logout, color: kExpenseColor, size: 18),
             ),
             title: const Text('Sign Out', style: TextStyle(color: kExpenseColor, fontWeight: FontWeight.w600)),
@@ -96,9 +244,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context: context,
                 builder: (_) => AlertDialog(
                   title: const Text('Sign out?'),
+                  content: const Text('You will be logged out of your account.'),
                   actions: [
                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
                   ],
                 ),
               );
@@ -107,6 +258,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
           ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Text(
+        label.toUpperCase(),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade500, letterSpacing: 0.8),
+      );
+}
+
+class _SettingCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final Widget trailing;
+
+  const _SettingCard({required this.icon, required this.iconColor, required this.title, required this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500))),
+          trailing,
         ],
       ),
     );
@@ -119,11 +316,17 @@ class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+        ),
         child: Row(
           children: [
-            SizedBox(width: 80, child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14))),
+            SizedBox(width: 72, child: Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 13))),
             Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14))),
           ],
         ),

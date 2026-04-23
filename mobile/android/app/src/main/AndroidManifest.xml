@@ -1,12 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Required for local notifications -->
+    <!-- Notifications -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Exact alarm: USE_EXACT_ALARM for Android 13+ (no user prompt needed) -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <!-- Fallback for Android 12 -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Image picker: Android 13+ uses READ_MEDIA_IMAGES, older uses READ_EXTERNAL_STORAGE -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:label="FinTrack"
