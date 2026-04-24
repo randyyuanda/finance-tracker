@@ -197,6 +197,19 @@ class AppL10n {
     '* Simulasi estimasi. Suku bunga aktual dapat berbeda.',
     '* 以上为估算值，实际利率以金融机构为准。',
   );
+
+  // ── Support / Info ──────────────────────────────────────────────
+  String get supportSection => _t('Support', 'Bantuan', '支持');
+  String get privacyPolicy => _t('Privacy Policy', 'Kebijakan Privasi', '隐私政策');
+  String get feedback => _t('Feedback', 'Masukan', '反馈');
+  String get aboutUs => _t('About BuxBux', 'Tentang BuxBux', '关于 BuxBux');
+  String get feedbackSubject => _t('Subject', 'Subjek', '主题');
+  String get feedbackMessageHint => _t('Tell us what you think...', 'Ceritakan pendapat Anda...', '请告诉我们您的意见...');
+  String get sendFeedback => _t('Send Feedback', 'Kirim Masukan', '发送反馈');
+  String get feedbackSentTitle => _t('Thank you!', 'Terima kasih!', '谢谢！');
+  String get feedbackSentMsg => _t('Your feedback has been received.', 'Masukan Anda telah diterima.', '您的反馈已收到。');
+  String get appTagline => _t('Smart Finance, Simple Life', 'Keuangan Cerdas, Hidup Mudah', '智慧理财，简单生活');
+  String get versionLabel => _t('Version', 'Versi', '版本');
 }
 
 extension L10nExt on BuildContext {

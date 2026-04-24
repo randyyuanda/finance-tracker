@@ -63,18 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = context.l10n;
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddTransaction,
-        backgroundColor: kPrimaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.add, size: 28),
-      ),
+      floatingActionButton: _GradientFAB(onTap: _openAddTransaction),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
-        elevation: 8,
+        elevation: 12,
         padding: EdgeInsets.zero,
         child: SafeArea(
           top: false,
@@ -129,6 +123,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class _GradientFAB extends StatelessWidget {
+  final VoidCallback onTap;
+  const _GradientFAB({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1677FF), Color(0xFF7C3AED)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: kPrimaryColor.withValues(alpha: 0.45),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
+      ),
+    );
+  }
+}
+
 class _NavButton extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
@@ -146,21 +177,36 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? kPrimaryColor : Colors.grey.shade500;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(selected ? activeIcon : icon, color: color, size: 22),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: selected
+                ? const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1677FF), Color(0xFF0050CC)],
+                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                  )
+                : null,
+            child: Icon(
+              selected ? activeIcon : icon,
+              color: selected ? Colors.white : Colors.grey.shade500,
+              size: 20,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
               fontSize: 10,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: color,
+              color: selected ? kPrimaryColor : Colors.grey.shade500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
