@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/notifications.dart';
 import 'core/theme.dart';
@@ -44,7 +45,19 @@ void main() async {
   // Register the background handler
   FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
 
+  // Ask Android to exempt this app from battery optimization
+  // so FCM messages arrive even when the app is killed.
+  _requestBatteryExemption();
+
   runApp(const BuxBuxApp());
+}
+
+Future<void> _requestBatteryExemption() async {
+  const ch = MethodChannel('com.fintrack/battery');
+  try {
+    final exempt = await ch.invokeMethod<bool>('isIgnoringBatteryOptimization') ?? false;
+    if (!exempt) await ch.invokeMethod('requestIgnoreBatteryOptimization');
+  } catch (_) {}
 }
 
 /// Slide-from-right transition used app-wide.

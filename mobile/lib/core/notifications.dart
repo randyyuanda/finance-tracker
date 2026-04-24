@@ -41,10 +41,26 @@ class NotificationService {
       onDidReceiveNotificationResponse: (_) {},
     );
 
+    final androidImpl = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
     // Request POST_NOTIFICATIONS permission (Android 13+)
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    await androidImpl?.requestNotificationsPermission();
+
+    // Create channels immediately so FCM can show notifications even when the
+    // app is killed — Android needs the channel to exist before FCM fires.
+    await androidImpl?.createNotificationChannel(const AndroidNotificationChannel(
+      'fintrack_reminders',
+      'Reminders',
+      description: 'BuxBux reminder alerts',
+      importance: Importance.high,
+    ));
+    await androidImpl?.createNotificationChannel(const AndroidNotificationChannel(
+      'fintrack_admin',
+      'Announcements',
+      description: 'Announcements from BuxBux',
+      importance: Importance.max,
+    ));
 
     _initialized = true;
   }
