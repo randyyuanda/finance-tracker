@@ -6,6 +6,8 @@ import 'package:timezone/timezone.dart' as tz;
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
+  // Tracks admin notification IDs already fired this session to prevent re-firing on every poll.
+  static final _firedAdminIds = <String>{};
 
   static const _channelId = 'fintrack_reminders';
   static const _channelName = 'Reminders';
@@ -97,8 +99,15 @@ class NotificationService {
     tz.TZDateTime when = tz.TZDateTime.from(scheduledAt, tz.local);
 
     if (repeatType == 'none') {
-      // Past one-time broadcast → fire in 5 seconds so user sees it immediately
-      if (when.isBefore(now)) when = now.add(const Duration(seconds: 5));
+      if (when.isBefore(now)) {
+        // Skip if already fired this session or if older than 24 hours
+        if (_firedAdminIds.contains(id)) return;
+        final age = now.difference(when);
+        if (age.inHours >= 24) return;
+        // Fire in 5 seconds so user sees it immediately
+        when = now.add(const Duration(seconds: 5));
+        _firedAdminIds.add(id);
+      }
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
