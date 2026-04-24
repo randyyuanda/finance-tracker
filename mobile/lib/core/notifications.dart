@@ -32,10 +32,11 @@ class NotificationService {
       onDidReceiveNotificationResponse: (_) {},
     );
 
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     // Request POST_NOTIFICATIONS permission (Android 13+)
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    await androidImpl?.requestNotificationsPermission();
+    // Request exact alarm permission for repeating notifications (Android 12+)
+    await androidImpl?.requestExactAlarmsPermission();
 
     _initialized = true;
   }
@@ -44,6 +45,7 @@ class NotificationService {
   static int _notifId(String reminderId) => reminderId.hashCode.abs();
 
   /// Schedule an OS notification at [when]. No-ops if [when] is in the past.
+  /// Uses alarmClock mode — fires at exact time with no special permission needed.
   static Future<void> schedule({
     required String id,
     required String title,
@@ -67,7 +69,7 @@ class NotificationService {
           playSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
@@ -85,7 +87,8 @@ class NotificationService {
   }
 
   /// Schedule an admin broadcast notification.
-  /// One-time past broadcasts fire immediately (5s). Repeating uses OS-level repeat.
+  /// One-time: alarmClock mode (exact, no permission needed).
+  /// Repeating: exactAllowWhileIdle (requires SCHEDULE_EXACT_ALARM permission).
   static Future<void> scheduleAdmin({
     required String id,
     required String title,
@@ -100,14 +103,13 @@ class NotificationService {
 
     if (repeatType == 'none') {
       if (when.isBefore(now)) {
-        // Skip if already fired this session or if older than 24 hours
+        // Skip if already fired this session or older than 24 hours
         if (_firedAdminIds.contains(id)) return;
-        final age = now.difference(when);
-        if (age.inHours >= 24) return;
-        // Fire in 5 seconds so user sees it immediately
+        if (now.difference(when).inHours >= 24) return;
         when = now.add(const Duration(seconds: 5));
         _firedAdminIds.add(id);
       }
+      // alarmClock fires at exact time without SCHEDULE_EXACT_ALARM permission
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
@@ -123,12 +125,12 @@ class NotificationService {
             playSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
     } else {
-      // Repeating: OS fires at next occurrence automatically
+      // Repeating: exactAllowWhileIdle + requires SCHEDULE_EXACT_ALARM (requested at init)
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
