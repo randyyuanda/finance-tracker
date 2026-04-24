@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/account_provider.dart';
@@ -70,7 +71,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Transaction')),
+      appBar: AppBar(title: Text(context.l10n.addTransaction)),
       body: Form(
         key: _formKey,
         child: ListView(

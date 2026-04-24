@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/transaction.dart';
 import '../../providers/transaction_provider.dart';
@@ -109,7 +110,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reports'),
+        title: Text(context.l10n.reportsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined),

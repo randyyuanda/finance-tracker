@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/recurring_provider.dart';
 import '../../models/recurring_transaction.dart';
@@ -25,7 +26,7 @@ class _RecurringScreenState extends State<RecurringScreen> {
     final provider = context.watch<RecurringProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recurring Transactions')),
+      appBar: AppBar(title: Text(context.l10n.recurring)),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : provider.items.isEmpty

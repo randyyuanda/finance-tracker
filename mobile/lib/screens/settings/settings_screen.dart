@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/l10n.dart';
 import '../../core/storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -38,31 +39,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickImage() async {
+    final s = context.l10n;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2))),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take a photo'),
+                title: Text(s.takePhoto),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
+                title: Text(s.chooseGallery),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               if (_localAvatarPath != null)
                 ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
+                  leading:
+                      const Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text(s.removePhoto,
+                      style: const TextStyle(color: Colors.red)),
                   onTap: () => Navigator.pop(context, null),
                 ),
             ],
@@ -79,7 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (source == null) return;
 
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 85, maxWidth: 512);
+    final picked =
+        await picker.pickImage(source: source, imageQuality: 85, maxWidth: 512);
     if (picked != null) {
       await Storage.saveLocalAvatar(picked.path);
       setState(() => _localAvatarPath = picked.path);
@@ -87,12 +98,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveProfile() async {
-    final ok = await context.read<AuthProvider>().updateProfile(_nameCtrl.text.trim());
+    final s = context.l10n;
+    final ok =
+        await context.read<AuthProvider>().updateProfile(_nameCtrl.text.trim());
     if (mounted) {
       setState(() => _editing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok ? 'Profile updated' : 'Failed to update'),
+          content: Text(ok ? s.profileUpdated : s.updateFailed),
           backgroundColor: ok ? kIncomeColor : kExpenseColor,
         ),
       );
@@ -101,15 +114,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.l10n;
     final user = context.watch<AuthProvider>().user;
     final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(s.settingsTitle),
         actions: [
           if (_editing)
-            TextButton(onPressed: _saveProfile, child: const Text('Save'))
+            TextButton(onPressed: _saveProfile, child: Text(s.save))
           else
             IconButton(
               icon: const Icon(Icons.edit_outlined),
@@ -129,11 +143,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: CircleAvatar(
                     radius: 48,
                     backgroundColor: kPrimaryColor,
-                    backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
+                    backgroundImage: _localAvatarPath != null
+                        ? FileImage(File(_localAvatarPath!))
+                        : null,
                     child: _localAvatarPath == null
                         ? Text(
-                            user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w700),
+                            user?.name.isNotEmpty == true
+                                ? user!.name[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w700),
                           )
                         : null,
                   ),
@@ -149,9 +170,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: BoxDecoration(
                         color: kPrimaryColor,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                        border: Border.all(
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            width: 2),
                       ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                      child: const Icon(Icons.camera_alt,
+                          color: Colors.white, size: 14),
                     ),
                   ),
                 ),
@@ -160,42 +184,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           Center(
-            child: Text('Tap to change photo',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+            child: Text(s.tapToChangePhoto,
+                style:
+                    TextStyle(fontSize: 12, color: Colors.grey.shade500)),
           ),
           const SizedBox(height: 24),
 
           // ── Profile info ──────────────────────────────────────────
-          _SectionLabel(label: 'Profile'),
+          _SectionLabel(label: s.profile),
           const SizedBox(height: 8),
           if (_editing) ...[
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
+              decoration: InputDecoration(
+                  labelText: s.fullName,
+                  prefixIcon: const Icon(Icons.person_outline)),
             ),
             const SizedBox(height: 16),
           ] else
-            _InfoRow(label: 'Name', value: user?.name ?? ''),
-          _InfoRow(label: 'Email', value: user?.email ?? ''),
+            _InfoRow(label: s.nameLabel, value: user?.name ?? ''),
+          _InfoRow(label: s.email, value: user?.email ?? ''),
 
           const SizedBox(height: 28),
 
           // ── Appearance ────────────────────────────────────────────
-          _SectionLabel(label: 'Appearance'),
+          _SectionLabel(label: s.appearance),
           const SizedBox(height: 8),
           _SettingCard(
             icon: Icons.brightness_6_outlined,
             iconColor: const Color(0xFFF4A935),
-            title: 'Theme',
+            title: s.theme,
             trailing: SegmentedButton<ThemeMode>(
               segments: const [
-                ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode, size: 16)),
-                ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.phone_android, size: 16)),
-                ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode, size: 16)),
+                ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode, size: 16)),
+                ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.phone_android, size: 16)),
+                ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode, size: 16)),
               ],
               selected: {themeProvider.themeMode},
               onSelectionChanged: (s) => themeProvider.setThemeMode(s.first),
-              style: ButtonStyle(
+              style: const ButtonStyle(
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -207,7 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingCard(
             icon: Icons.language_outlined,
             iconColor: const Color(0xFF1677FF),
-            title: 'Language',
+            title: s.language,
             trailing: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: themeProvider.language,
@@ -215,6 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 items: const [
                   DropdownMenuItem(value: 'en', child: Text('English')),
                   DropdownMenuItem(value: 'id', child: Text('Indonesia')),
+                  DropdownMenuItem(value: 'zh', child: Text('中文')),
                 ],
                 onChanged: (v) {
                   if (v != null) themeProvider.setLanguage(v);
@@ -226,30 +260,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 28),
 
           // ── Danger zone ───────────────────────────────────────────
-          _SectionLabel(label: 'Account'),
+          _SectionLabel(label: s.account),
           const SizedBox(height: 8),
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
             tileColor: kExpenseColor.withValues(alpha: 0.07),
             leading: Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(color: kExpenseColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+              decoration: BoxDecoration(
+                  color: kExpenseColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9)),
               child: const Icon(Icons.logout, color: kExpenseColor, size: 18),
             ),
-            title: const Text('Sign Out', style: TextStyle(color: kExpenseColor, fontWeight: FontWeight.w600)),
+            title: Text(s.signOut,
+                style: const TextStyle(
+                    color: kExpenseColor, fontWeight: FontWeight.w600)),
             onTap: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text('Sign out?'),
-                  content: const Text('You will be logged out of your account.'),
+                  title: Text(s.signOutTitle),
+                  content: Text(s.signOutMsg),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(s.cancel)),
                     TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
+                        child: Text(s.signOut,
+                            style: const TextStyle(color: Colors.red))),
                   ],
                 ),
               );
@@ -272,7 +315,11 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         label.toUpperCase(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade500, letterSpacing: 0.8),
+        style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.8),
       );
 }
 
@@ -282,7 +329,11 @@ class _SettingCard extends StatelessWidget {
   final String title;
   final Widget trailing;
 
-  const _SettingCard({required this.icon, required this.iconColor, required this.title, required this.trailing});
+  const _SettingCard(
+      {required this.icon,
+      required this.iconColor,
+      required this.title,
+      required this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -291,18 +342,25 @@ class _SettingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)
+        ],
       ),
       child: Row(
         children: [
           Container(
             width: 34,
             height: 34,
-            decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+            decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9)),
             child: Icon(icon, color: iconColor, size: 18),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(
+              child: Text(title,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
           trailing,
         ],
       ),
@@ -317,17 +375,28 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)
+          ],
         ),
         child: Row(
           children: [
-            SizedBox(width: 72, child: Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 13))),
-            Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14))),
+            SizedBox(
+                width: 72,
+                child: Text(label,
+                    style: TextStyle(
+                        color: Colors.grey.shade500, fontSize: 13))),
+            Expanded(
+                child: Text(value,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 14))),
           ],
         ),
       );

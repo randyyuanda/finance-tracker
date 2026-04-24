@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 
@@ -35,13 +36,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Registration failed'), backgroundColor: kExpenseColor),
+        SnackBar(
+            content: Text(auth.error ?? context.l10n.registerFailed),
+            backgroundColor: kExpenseColor),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = context.l10n;
     final loading = context.watch<AuthProvider>().loading;
 
     return Scaffold(
@@ -56,27 +60,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14),
-                    child: Image.asset('assets/logo.png', width: 48, height: 48, fit: BoxFit.cover),
+                    child: Image.asset('assets/logo.png',
+                        width: 48, height: 48, fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'BuxBux',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: kPrimaryColor,
-                        ),
+                        fontWeight: FontWeight.w700, color: kPrimaryColor),
                   ),
                 ],
               ),
               const SizedBox(height: 40),
               Text(
-                'Create account',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+                s.createAccountTitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
-                'Start managing your finances',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+                s.createAccountSub,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.grey),
               ),
               const SizedBox(height: 40),
               Form(
@@ -86,35 +95,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _nameCtrl,
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person_outline),
+                      decoration: InputDecoration(
+                        labelText: s.fullName,
+                        prefixIcon: const Icon(Icons.person_outline),
                       ),
-                      validator: (v) => v == null || v.isEmpty ? 'Enter your name' : null,
+                      validator: (v) =>
+                          v == null || v.isEmpty ? s.fullName : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+                      decoration: InputDecoration(
+                        labelText: s.email,
+                        prefixIcon: const Icon(Icons.email_outlined),
                       ),
-                      validator: (v) => v == null || !v.contains('@') ? 'Enter valid email' : null,
+                      validator: (v) =>
+                          v == null || !v.contains('@') ? s.email : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passCtrl,
                       obscureText: _obscure,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: s.password,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                          onPressed: () => setState(() => _obscure = !_obscure),
+                          icon: Icon(_obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined),
+                          onPressed: () =>
+                              setState(() => _obscure = !_obscure),
                         ),
                       ),
-                      validator: (v) => v == null || v.length < 6 ? 'Min 6 characters' : null,
+                      validator: (v) =>
+                          v == null || v.length < 6 ? 'Min 6 characters' : null,
                     ),
                     const SizedBox(height: 28),
                     SizedBox(
@@ -125,9 +140,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('Create Account'),
+                            : Text(s.createAccount),
                       ),
                     ),
                   ],
@@ -137,12 +153,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Already have an account? '),
+                  Text('${s.hasAccount} '),
                   GestureDetector(
-                    onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                    onTap: () =>
+                        Navigator.pushReplacementNamed(context, '/login'),
                     child: Text(
-                      'Sign In',
-                      style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.w600),
+                      s.signIn,
+                      style: TextStyle(
+                          color: kPrimaryColor, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

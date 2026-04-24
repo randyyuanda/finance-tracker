@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../main.dart';
 import '../providers/reminder_provider.dart';
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.l10n;
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
@@ -73,48 +75,54 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         elevation: 8,
-        height: 64,
-        child: Row(
-          children: [
-            Expanded(
-              child: _NavButton(
-                icon: Icons.dashboard_outlined,
-                activeIcon: Icons.dashboard,
-                label: 'Dashboard',
-                selected: _currentIndex == 0,
-                onTap: () => setState(() => _currentIndex = 0),
-              ),
+        padding: EdgeInsets.zero,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _NavButton(
+                    icon: Icons.dashboard_outlined,
+                    activeIcon: Icons.dashboard,
+                    label: s.navDashboard,
+                    selected: _currentIndex == 0,
+                    onTap: () => setState(() => _currentIndex = 0),
+                  ),
+                ),
+                Expanded(
+                  child: _NavButton(
+                    icon: Icons.swap_horiz_outlined,
+                    activeIcon: Icons.swap_horiz,
+                    label: s.navTransactions,
+                    selected: _currentIndex == 1,
+                    onTap: () => setState(() => _currentIndex = 1),
+                  ),
+                ),
+                // Space for center FAB
+                const SizedBox(width: 72),
+                Expanded(
+                  child: _NavButton(
+                    icon: Icons.bar_chart_outlined,
+                    activeIcon: Icons.bar_chart,
+                    label: s.navReports,
+                    selected: _currentIndex == 2,
+                    onTap: () => setState(() => _currentIndex = 2),
+                  ),
+                ),
+                Expanded(
+                  child: _NavButton(
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    label: s.navAccount,
+                    selected: _currentIndex == 3,
+                    onTap: () => setState(() => _currentIndex = 3),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: _NavButton(
-                icon: Icons.swap_horiz_outlined,
-                activeIcon: Icons.swap_horiz,
-                label: 'Transactions',
-                selected: _currentIndex == 1,
-                onTap: () => setState(() => _currentIndex = 1),
-              ),
-            ),
-            // Space for center FAB
-            const SizedBox(width: 72),
-            Expanded(
-              child: _NavButton(
-                icon: Icons.bar_chart_outlined,
-                activeIcon: Icons.bar_chart,
-                label: 'Reports',
-                selected: _currentIndex == 2,
-                onTap: () => setState(() => _currentIndex = 2),
-              ),
-            ),
-            Expanded(
-              child: _NavButton(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: 'Account',
-                selected: _currentIndex == 3,
-                onTap: () => setState(() => _currentIndex = 3),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -142,23 +150,22 @@ class _NavButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(selected ? activeIcon : icon, color: color, size: 22),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                color: color,
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(selected ? activeIcon : icon, color: color, size: 22),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: color,
             ),
-          ],
-        ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

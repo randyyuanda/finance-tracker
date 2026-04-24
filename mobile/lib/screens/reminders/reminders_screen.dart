@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/reminder_provider.dart';
 import '../../models/reminder.dart';
@@ -174,7 +175,7 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reminders'),
+        title: Text(context.l10n.reminders),
         bottom: TabBar(
           controller: _tabCtrl,
           isScrollable: true,

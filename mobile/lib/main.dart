@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/notifications.dart';
 import 'core/theme.dart';
@@ -131,6 +132,13 @@ class _AppRootState extends State<_AppRoot> {
       theme: lightTheme(),
       darkTheme: darkTheme(),
       themeMode: themeProvider.themeMode,
+      locale: _localeFromLang(themeProvider.language),
+      supportedLocales: const [Locale('en'), Locale('id'), Locale('zh')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: !auth.initialized
           ? const _SplashScreen()
           : auth.isAuthenticated
@@ -145,6 +153,14 @@ class _AppRootState extends State<_AppRoot> {
         }
       },
     );
+  }
+}
+
+Locale _localeFromLang(String lang) {
+  switch (lang) {
+    case 'id': return const Locale('id', 'ID');
+    case 'zh': return const Locale('zh', 'CN');
+    default:   return const Locale('en', 'US');
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../models/goal.dart';
@@ -134,7 +135,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     final provider = context.watch<GoalProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Goals')),
+      appBar: AppBar(title: Text(context.l10n.goals)),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : provider.goals.isEmpty

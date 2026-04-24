@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/l10n.dart';
 import '../../core/storage.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
@@ -36,10 +37,11 @@ class _MoreScreenState extends State<MoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.l10n;
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
+      appBar: AppBar(title: Text(s.accountTab)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -102,17 +104,17 @@ class _MoreScreenState extends State<MoreScreen> {
           const SizedBox(height: 8),
 
           // ── Goals & Reminders ─────────────────────────────────────
-          _Section(title: 'Goals & Reminders', items: [
+          _Section(title: s.goalsReminders, items: [
             _MenuItem(
               icon: Icons.track_changes_outlined,
-              label: 'Goals',
+              label: s.goals,
               color: const Color(0xFF52C41A),
               onTap: () =>
                   Navigator.push(context, slideRoute(const GoalsScreen())),
             ),
             _MenuItem(
               icon: Icons.notifications_outlined,
-              label: 'Reminders',
+              label: s.reminders,
               color: const Color(0xFFFFA940),
               onTap: () =>
                   Navigator.push(context, slideRoute(const RemindersScreen())),
@@ -121,24 +123,24 @@ class _MoreScreenState extends State<MoreScreen> {
           const SizedBox(height: 8),
 
           // ── Finance ───────────────────────────────────────────────
-          _Section(title: 'Finance', items: [
+          _Section(title: s.finance, items: [
             _MenuItem(
               icon: Icons.account_balance_wallet_outlined,
-              label: 'Accounts',
+              label: s.accounts,
               color: kPrimaryColor,
               onTap: () =>
                   Navigator.push(context, slideRoute(const AccountsScreen())),
             ),
             _MenuItem(
               icon: Icons.autorenew,
-              label: 'Recurring Transactions',
+              label: s.recurringShort,
               color: const Color(0xFF722ED1),
               onTap: () =>
                   Navigator.push(context, slideRoute(const RecurringScreen())),
             ),
             _MenuItem(
               icon: Icons.bar_chart_outlined,
-              label: 'Reports & Export',
+              label: s.reportsExport,
               color: const Color(0xFF13C2C2),
               onTap: () =>
                   Navigator.push(context, slideRoute(const ReportsScreen())),
@@ -147,24 +149,24 @@ class _MoreScreenState extends State<MoreScreen> {
           const SizedBox(height: 8),
 
           // ── Simulators ────────────────────────────────────────────
-          _Section(title: 'Simulasi Kredit', items: [
+          _Section(title: s.simulasiKredit, items: [
             _MenuItem(
               icon: Icons.home_outlined,
-              label: 'Simulasi KPR',
+              label: s.simulasiKprMenu,
               color: kPrimaryColor,
               onTap: () =>
                   Navigator.push(context, slideRoute(const KprScreen())),
             ),
             _MenuItem(
               icon: Icons.two_wheeler_outlined,
-              label: 'Simulasi Kredit Motor',
+              label: s.simulasiMotorMenu,
               color: const Color(0xFF52C41A),
               onTap: () =>
                   Navigator.push(context, slideRoute(const KreditMotorScreen())),
             ),
             _MenuItem(
               icon: Icons.directions_car_outlined,
-              label: 'Simulasi Kredit Mobil',
+              label: s.simulasiMobilMenu,
               color: const Color(0xFFFFA940),
               onTap: () =>
                   Navigator.push(context, slideRoute(const KreditMobilScreen())),
@@ -173,10 +175,10 @@ class _MoreScreenState extends State<MoreScreen> {
           const SizedBox(height: 8),
 
           // ── App ───────────────────────────────────────────────────
-          _Section(title: 'App', items: [
+          _Section(title: s.appSection, items: [
             _MenuItem(
               icon: Icons.settings_outlined,
-              label: 'Settings',
+              label: s.settings,
               color: Colors.grey.shade600,
               onTap: () async {
                 await Navigator.push(context, slideRoute(const SettingsScreen()));
@@ -185,21 +187,21 @@ class _MoreScreenState extends State<MoreScreen> {
             ),
             _MenuItem(
               icon: Icons.logout,
-              label: 'Sign Out',
+              label: s.signOut,
               color: kExpenseColor,
               onTap: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: const Text('Sign out?'),
+                    title: Text(s.signOutTitle),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel')),
+                          child: Text(s.cancel)),
                       TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Sign Out',
-                              style: TextStyle(color: Colors.red))),
+                          child: Text(s.signOut,
+                              style: const TextStyle(color: Colors.red))),
                     ],
                   ),
                 );

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
 import '../../models/transaction.dart';
@@ -31,6 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.l10n;
     final auth = context.watch<AuthProvider>();
     final dash = context.watch<DashboardProvider>();
     return Scaffold(
@@ -68,13 +70,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Hi, ${auth.user?.name.split(' ').first ?? ''}!',
+                                      '${s.hi}, ${auth.user?.name.split(' ').first ?? ''}!',
                                       style: const TextStyle(
                                           color: Colors.white70, fontSize: 14),
                                     ),
-                                    const Text(
-                                      'Financial Overview',
-                                      style: TextStyle(
+                                    Text(
+                                      s.financialOverview,
+                                      style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 17,
                                           fontWeight: FontWeight.w700),
@@ -98,8 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text('Total Balance',
-                              style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          Text(s.totalBalance,
+                              style: const TextStyle(color: Colors.white70, fontSize: 13)),
                           const SizedBox(height: 2),
                           Text(
                             dash.stats != null
@@ -116,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              title: const Text('Dashboard', style: TextStyle(color: Colors.white)),
+              title: Text(s.dashboardTitle, style: const TextStyle(color: Colors.white)),
               backgroundColor: kPrimaryColor,
             ),
 
@@ -136,25 +138,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   delegate: SliverChildListDelegate([
                     _StatCard(
-                      label: 'Income',
+                      label: s.income,
                       value: formatCurrency(dash.stats?.monthlyIncome ?? 0),
                       icon: Icons.arrow_downward_rounded,
                       color: kIncomeColor,
                     ),
                     _StatCard(
-                      label: 'Expense',
+                      label: s.expense,
                       value: formatCurrency(dash.stats?.monthlyExpense ?? 0),
                       icon: Icons.arrow_upward_rounded,
                       color: kExpenseColor,
                     ),
                     _StatCard(
-                      label: 'Net Savings',
+                      label: s.netSavings,
                       value: formatCurrency(dash.stats?.monthlySavings ?? 0),
                       icon: Icons.savings_outlined,
                       color: kPrimaryColor,
                     ),
                     _StatCard(
-                      label: 'Accounts',
+                      label: s.accounts,
                       value: '${dash.accounts.length}',
                       icon: Icons.account_balance_wallet_outlined,
                       color: const Color(0xFF722ED1),
@@ -164,7 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
 
               // ── Feature quick-access ──────────────────────────────
-              _sectionHeader(context, 'Fitur'),
+              _sectionHeader(context, s.features),
               SliverToBoxAdapter(
                 child: SizedBox(
                   height: 90,
@@ -174,42 +176,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       _FeatureChip(
                         icon: Icons.track_changes,
-                        label: 'Goals',
+                        label: s.goals,
                         color: const Color(0xFF52C41A),
                         onTap: () => Navigator.push(
                             context, slideRoute(const GoalsScreen())),
                       ),
                       _FeatureChip(
                         icon: Icons.notifications_outlined,
-                        label: 'Reminders',
+                        label: s.reminders,
                         color: const Color(0xFFFFA940),
                         onTap: () => Navigator.push(
                             context, slideRoute(const RemindersScreen())),
                       ),
                       _FeatureChip(
                         icon: Icons.home_outlined,
-                        label: 'Simulasi\nKPR',
+                        label: 'KPR',
                         color: kPrimaryColor,
                         onTap: () => Navigator.push(
                             context, slideRoute(const KprScreen())),
                       ),
                       _FeatureChip(
                         icon: Icons.two_wheeler_outlined,
-                        label: 'Kredit\nMotor',
+                        label: s.simMotorTitle,
                         color: const Color(0xFF52C41A),
                         onTap: () => Navigator.push(
                             context, slideRoute(const KreditMotorScreen())),
                       ),
                       _FeatureChip(
                         icon: Icons.directions_car_outlined,
-                        label: 'Kredit\nMobil',
+                        label: s.simMobilTitle,
                         color: const Color(0xFFFFA940),
                         onTap: () => Navigator.push(
                             context, slideRoute(const KreditMobilScreen())),
                       ),
                       _FeatureChip(
                         icon: Icons.bar_chart_outlined,
-                        label: 'Reports',
+                        label: s.reportsTitle,
                         color: const Color(0xFF13C2C2),
                         onTap: () => Navigator.push(
                             context, slideRoute(const ReportsScreen())),
@@ -223,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (dash.stats != null &&
                   (dash.stats!.monthlyIncome > 0 ||
                       dash.stats!.monthlyExpense > 0)) ...[
-                _sectionHeader(context, 'This Month'),
+                _sectionHeader(context, s.thisMonth),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -237,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // ── Spending trend (last 7 days) ─────────────────────
               if (dash.recentTransactions.isNotEmpty) ...[
-                _sectionHeader(context, 'Last 7 Days'),
+                _sectionHeader(context, s.last7Days),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -248,7 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // ── Accounts carousel ─────────────────────────────────
               if (dash.accounts.isNotEmpty) ...[
-                _sectionHeader(context, 'Accounts'),
+                _sectionHeader(context, s.accounts),
                 SliverToBoxAdapter(
                   child: SizedBox(
                     height: 100,
@@ -298,7 +300,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // ── Recent transactions ───────────────────────────────
               if (dash.recentTransactions.isNotEmpty) ...[
-                _sectionHeader(context, 'Recent Transactions'),
+                _sectionHeader(context, s.recentTransactions),
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (_, i) =>

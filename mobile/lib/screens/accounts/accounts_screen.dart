@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/account_provider.dart';
 import '../../models/account.dart';
@@ -153,7 +154,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final provider = context.watch<AccountProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Accounts')),
+      appBar: AppBar(title: Text(context.l10n.accounts)),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : provider.accounts.isEmpty
