@@ -6,13 +6,22 @@ import 'package:timezone/timezone.dart' as tz;
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
-  // Tracks admin notification IDs already fired this session to prevent re-firing on every poll.
-  static final _firedAdminIds = <String>{};
 
   static const _channelId = 'fintrack_reminders';
   static const _channelName = 'Reminders';
   static const _adminChannelId = 'fintrack_admin';
   static const _adminChannelName = 'Announcements';
+
+  static const _adminDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      _adminChannelId,
+      _adminChannelName,
+      channelDescription: 'Announcements from BuxBux',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+    ),
+  );
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -32,20 +41,18 @@ class NotificationService {
       onDidReceiveNotificationResponse: (_) {},
     );
 
-    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     // Request POST_NOTIFICATIONS permission (Android 13+)
-    await androidImpl?.requestNotificationsPermission();
-    // Request exact alarm permission for repeating notifications (Android 12+)
-    await androidImpl?.requestExactAlarmsPermission();
+    await _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
 
     _initialized = true;
   }
 
-  // Stable int ID derived from reminder string ID
-  static int _notifId(String reminderId) => reminderId.hashCode.abs();
+  static int _notifId(String id) => id.hashCode.abs();
+  static int _adminNotifId(String id) => ('admin_$id').hashCode.abs();
 
-  /// Schedule an OS notification at [when]. No-ops if [when] is in the past.
-  /// Uses alarmClock mode — fires at exact time with no special permission needed.
+  /// Schedule a user reminder at [when]. No-ops if [when] is in the past.
   static Future<void> schedule({
     required String id,
     required String title,
@@ -75,8 +82,6 @@ class NotificationService {
     );
   }
 
-  static int _adminNotifId(String id) => ('admin_$id').hashCode.abs();
-
   static DateTimeComponents? _repeatComponents(String repeatType) {
     switch (repeatType) {
       case 'daily':   return DateTimeComponents.time;
@@ -86,9 +91,10 @@ class NotificationService {
     }
   }
 
-  /// Schedule an admin broadcast notification.
-  /// One-time: alarmClock mode (exact, no permission needed).
-  /// Repeating: exactAllowWhileIdle (requires SCHEDULE_EXACT_ALARM permission).
+  /// Deliver an admin broadcast.
+  /// - Past / current: show immediately via _plugin.show() (no AlarmManager, no permissions).
+  /// - Future one-time: schedule with alarmClock mode (exact, no SCHEDULE_EXACT_ALARM needed).
+  /// - Repeating: schedule with exactAllowWhileIdle (requires SCHEDULE_EXACT_ALARM permission).
   static Future<void> scheduleAdmin({
     required String id,
     required String title,
@@ -98,54 +104,40 @@ class NotificationService {
   }) async {
     if (!_initialized) return;
 
-    final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime when = tz.TZDateTime.from(scheduledAt, tz.local);
+    final bodyText = (body != null && body.isNotEmpty) ? body : 'Message from BuxBux';
+    final now = DateTime.now();
 
     if (repeatType == 'none') {
-      if (when.isBefore(now)) {
-        // Skip if already fired this session or older than 24 hours
-        if (_firedAdminIds.contains(id)) return;
-        if (now.difference(when).inHours >= 24) return;
-        when = now.add(const Duration(seconds: 5));
-        _firedAdminIds.add(id);
+      if (!scheduledAt.isAfter(now)) {
+        // Already due — show immediately, bypass AlarmManager entirely
+        await _plugin.show(
+          _adminNotifId(id),
+          '📢 $title',
+          bodyText,
+          _adminDetails,
+        );
+      } else {
+        // Future one-time — alarmClock fires at exact time, no special permission needed
+        await _plugin.zonedSchedule(
+          _adminNotifId(id),
+          '📢 $title',
+          bodyText,
+          tz.TZDateTime.from(scheduledAt, tz.local),
+          _adminDetails,
+          androidScheduleMode: AndroidScheduleMode.alarmClock,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
       }
-      // alarmClock fires at exact time without SCHEDULE_EXACT_ALARM permission
-      await _plugin.zonedSchedule(
-        _adminNotifId(id),
-        '📢 $title',
-        body?.isNotEmpty == true ? body : 'Message from BuxBux',
-        when,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _adminChannelId,
-            _adminChannelName,
-            channelDescription: 'Announcements from BuxBux',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.alarmClock,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
     } else {
-      // Repeating: exactAllowWhileIdle + requires SCHEDULE_EXACT_ALARM (requested at init)
+      // Repeating — requires SCHEDULE_EXACT_ALARM (user granted via system settings)
+      final tzWhen = tz.TZDateTime.from(scheduledAt, tz.local);
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
-        body?.isNotEmpty == true ? body : 'Message from BuxBux',
-        when,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _adminChannelId,
-            _adminChannelName,
-            channelDescription: 'Announcements from BuxBux',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-          ),
-        ),
+        bodyText,
+        tzWhen,
+        _adminDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -154,10 +146,10 @@ class NotificationService {
     }
   }
 
-  /// Cancel a previously scheduled notification.
+  /// Cancel a previously scheduled user reminder.
   static Future<void> cancel(String id) => _plugin.cancel(_notifId(id));
 
-  /// Re-schedule all active reminders (call this after login / app restart).
+  /// Re-schedule all active user reminders (call after login / app restart).
   static Future<void> rescheduleAll(List<Map<String, dynamic>> reminders) async {
     if (!_initialized) return;
     await _plugin.cancelAll();

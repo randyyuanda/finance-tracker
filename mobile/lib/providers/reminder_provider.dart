@@ -106,17 +106,30 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> checkAdminNotifications() async {
     try {
       final res = await ApiClient.dio.get('/notifications/admin');
-      final notifications = (res.data as List).cast<Map<String, dynamic>>();
-      for (final n in notifications) {
+      final raw = res.data;
+      if (raw is! List) return;
+      for (final item in raw) {
+        if (item is! Map<String, dynamic>) continue;
+        final id = item['id'] as String? ?? '';
+        final title = item['title'] as String? ?? '';
+        final body = item['note'] as String?;
+        final scheduledStr = item['scheduledAt'] as String?;
+        final repeatType = item['repeatType'] as String? ?? 'none';
+        if (id.isEmpty || title.isEmpty || scheduledStr == null) continue;
+        final scheduledAt = DateTime.tryParse(scheduledStr);
+        if (scheduledAt == null) continue;
         await NotificationService.scheduleAdmin(
-          id: n['id'] as String,
-          title: n['title'] as String,
-          body: n['note'] as String?,
-          scheduledAt: DateTime.parse(n['scheduledAt'] as String),
-          repeatType: n['repeatType'] as String? ?? 'none',
+          id: id,
+          title: title,
+          body: body,
+          scheduledAt: scheduledAt,
+          repeatType: repeatType,
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      // Silently fail — notification delivery is best-effort
+      assert(() { print('[BuxBux] checkAdminNotifications error: $e'); return true; }());
+    }
   }
 
   Future<bool> delete(String id) async {
