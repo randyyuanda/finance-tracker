@@ -59,7 +59,7 @@ class NotificationService {
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
-          channelDescription: 'FinTrack reminder alerts',
+          channelDescription: 'BuxBux reminder alerts',
           importance: Importance.high,
           priority: Priority.high,
           playSound: true,
@@ -102,13 +102,13 @@ class NotificationService {
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
-        body?.isNotEmpty == true ? body : 'Message from FinTrack',
+        body?.isNotEmpty == true ? body : 'Message from BuxBux',
         when,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             _adminChannelId,
             _adminChannelName,
-            channelDescription: 'Announcements from FinTrack',
+            channelDescription: 'Announcements from BuxBux',
             importance: Importance.high,
             priority: Priority.high,
             playSound: true,
@@ -123,13 +123,13 @@ class NotificationService {
       await _plugin.zonedSchedule(
         _adminNotifId(id),
         '📢 $title',
-        body?.isNotEmpty == true ? body : 'Message from FinTrack',
+        body?.isNotEmpty == true ? body : 'Message from BuxBux',
         when,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             _adminChannelId,
             _adminChannelName,
-            channelDescription: 'Announcements from FinTrack',
+            channelDescription: 'Announcements from BuxBux',
             importance: Importance.high,
             priority: Priority.high,
             playSound: true,

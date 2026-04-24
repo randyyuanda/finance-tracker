@@ -15,7 +15,7 @@ class TransactionProvider extends ChangeNotifier {
   String? get error => _error;
   bool get hasMore => _transactions.length < _total;
 
-  Future<void> fetchAll({bool reset = true, String? type, String? accountId}) async {
+  Future<void> fetchAll({bool reset = true, String? type, String? accountId, int? limit}) async {
     if (reset) {
       _page = 1;
       _transactions = [];
@@ -23,7 +23,7 @@ class TransactionProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
     try {
-      final params = <String, dynamic>{'page': _page, 'limit': _limit};
+      final params = <String, dynamic>{'page': _page, 'limit': limit ?? _limit};
       if (type != null) params['type'] = type;
       if (accountId != null) params['accountId'] = accountId;
 

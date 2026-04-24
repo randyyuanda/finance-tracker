@@ -57,8 +57,8 @@ exports.getCategoryBreakdown = async (req, res) => {
 const addCategorySheet = (workbook, name, rows, headerColor) => {
   const sheet = workbook.addWorksheet(name);
   
-  // Add FinTrack footer
-  sheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
+  // Add BuxBux footer
+  sheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"BuxBux &RPage &P of &N";
 
   sheet.columns = [
     { header: 'Category', key: 'name', width: 28 },
@@ -153,11 +153,11 @@ exports.downloadReport = async (req, res) => {
       .sort((a, b) => b.total - a.total);
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Finance Tracker';
+    workbook.creator = 'BuxBux';
 
     // Sheet 1: Transactions
     const txSheet = workbook.addWorksheet('Transactions');
-    txSheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
+    txSheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"BuxBux &RPage &P of &N";
     txSheet.columns = [
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Account', key: 'account', width: 20 },
@@ -188,7 +188,7 @@ exports.downloadReport = async (req, res) => {
 
     // Sheet 2: Summary
     const summarySheet = workbook.addWorksheet('Summary');
-    summarySheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"FinTrack &RPage &P of &N";
+    summarySheet.headerFooter.oddFooter = "&C&\"Arial,Bold\"BuxBux &RPage &P of &N";
     summarySheet.columns = [
       { header: 'Metric', key: 'metric', width: 25 },
       { header: 'Amount (IDR)', key: 'amount', width: 20 },

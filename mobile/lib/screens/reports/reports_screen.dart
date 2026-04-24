@@ -28,7 +28,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _reload() {
-    context.read<TransactionProvider>().fetchAll(reset: true);
+    context.read<TransactionProvider>().fetchAll(reset: true, limit: 1000);
   }
 
   List<Transaction> get _filtered {
@@ -60,13 +60,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/fintrack_transactions.csv');
+    final file = File('${dir.path}/buxbux_transactions.csv');
     await file.writeAsString(buf.toString());
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'text/csv')],
-      subject: 'FinTrack Transactions',
-      text: 'Here are my transactions exported from FinTrack.',
+      subject: 'BuxBux Transactions',
+      text: 'Here are my transactions exported from BuxBux.',
     );
   }
 

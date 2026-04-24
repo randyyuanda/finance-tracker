@@ -14,15 +14,15 @@ module.exports = async function seedAdmin() {
           isAdmin: true,
         },
       });
-      console.log('[FinTrack] Superadmin account created');
+      console.log('[BuxBux] Superadmin account created');
     } else if (!existing.isAdmin) {
       await prisma.user.update({
         where: { email: 'superadmin@admin.com' },
         data: { isAdmin: true },
       });
-      console.log('[FinTrack] Superadmin flag set on existing account');
+      console.log('[BuxBux] Superadmin flag set on existing account');
     }
   } catch (err) {
-    console.error('[FinTrack] Seed admin error:', err.message);
+    console.error('[BuxBux] Seed admin error:', err.message);
   }
 };

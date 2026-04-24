@@ -18,7 +18,7 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.initialize();
-  runApp(const FinTrackApp());
+  runApp(const BuxBuxApp());
 }
 
 /// Slide-from-right transition used app-wide.
@@ -42,8 +42,8 @@ Route<T> fadeRoute<T>(Widget page) => PageRouteBuilder<T>(
       transitionDuration: const Duration(milliseconds: 220),
     );
 
-class FinTrackApp extends StatelessWidget {
-  const FinTrackApp({super.key});
+class BuxBuxApp extends StatelessWidget {
+  const BuxBuxApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +87,7 @@ class _AppRootState extends State<_AppRoot> {
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
-      title: 'FinTrack',
+      title: 'BuxBux',
       debugShowCheckedModeBanner: false,
       theme: lightTheme(),
       darkTheme: darkTheme(),
@@ -119,18 +119,13 @@ class _SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: kPrimaryColor,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: const Icon(Icons.account_balance, color: Colors.white, size: 44),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: Image.asset('assets/logo.png', width: 80, height: 80, fit: BoxFit.cover),
             ),
             const SizedBox(height: 20),
             Text(
-              'FinTrack',
+              'BuxBux',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: kPrimaryColor,

@@ -14,12 +14,13 @@ exports.getGoals = async (req, res) => {
 
 exports.createGoal = async (req, res) => {
   try {
-    const { name, targetAmount, deadline, color } = req.body;
+    const { name, targetAmount, currentAmount, deadline, color } = req.body;
     const goal = await prisma.goal.create({
       data: {
         userId: req.user.id,
         name,
         targetAmount: parseFloat(targetAmount),
+        currentAmount: currentAmount !== undefined ? parseFloat(currentAmount) : 0,
         deadline: deadline ? new Date(deadline) : null,
         color: color || '#1890ff',
       },

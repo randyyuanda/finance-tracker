@@ -23,16 +23,23 @@ class Transaction {
     this.accountName,
   });
 
-  factory Transaction.fromJson(Map<String, dynamic> j) => Transaction(
-        id: j['id'] ?? '',
-        accountId: j['accountId'] ?? '',
-        categoryId: j['categoryId'] ?? '',
-        amount: (j['amount'] as num?)?.toDouble() ?? 0,
-        type: j['type'] ?? 'expense',
-        date: DateTime.tryParse(j['date'] ?? '') ?? DateTime.now(),
-        note: j['note'],
-        categoryName: j['category']?['name'],
-        categoryColor: j['category']?['color'],
-        accountName: j['account']?['name'],
-      );
+  factory Transaction.fromJson(Map<String, dynamic> j) {
+    // Backend's fmtTransaction embeds the account/category OBJECT inside
+    // the accountId/categoryId fields instead of a plain string ID.
+    final acct = j['accountId'] is Map ? j['accountId'] as Map<String, dynamic> : null;
+    final cat  = j['categoryId'] is Map ? j['categoryId'] as Map<String, dynamic> : null;
+
+    return Transaction(
+      id: j['id'] ?? '',
+      accountId: acct?['id'] ?? (j['accountId'] is String ? j['accountId'] as String : ''),
+      categoryId: cat?['id'] ?? (j['categoryId'] is String ? j['categoryId'] as String : ''),
+      amount: (j['amount'] as num?)?.toDouble() ?? 0,
+      type: j['type'] ?? 'expense',
+      date: DateTime.tryParse(j['date'] ?? '') ?? DateTime.now(),
+      note: j['note'],
+      categoryName: cat?['name'] ?? j['category']?['name'],
+      categoryColor: cat?['color'] ?? j['category']?['color'],
+      accountName: acct?['name'] ?? j['account']?['name'],
+    );
+  }
 }

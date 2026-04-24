@@ -183,7 +183,7 @@ export default function Admin() {
       }}>
         <Space size={12}>
           <CrownOutlined style={{ color: '#faad14', fontSize: 22 }} />
-          <Text strong style={{ color: '#fff', fontSize: 18 }}>FinTrack Admin</Text>
+          <Text strong style={{ color: '#fff', fontSize: 18 }}>BuxBux Admin</Text>
           <Tag color="gold" style={{ marginLeft: 4 }}>Superadmin</Tag>
         </Space>
         <Space>

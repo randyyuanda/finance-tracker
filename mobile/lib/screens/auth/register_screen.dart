@@ -54,18 +54,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 32),
               Row(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: kPrimaryColor,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.account_balance, color: Colors.white, size: 26),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.asset('assets/logo.png', width: 48, height: 48, fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'FinTrack',
+                    'BuxBux',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: kPrimaryColor,

@@ -1,6 +1,6 @@
-# FinTrack – Architecture Overview
+# BuxBux – Architecture Overview
 
-FinTrack is a full-stack personal finance tracker with three separate layers:
+BuxBux is a full-stack personal finance tracker with three separate layers:
 
 | Layer | Stack | Hosting |
 |---|---|---|

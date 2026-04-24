@@ -51,7 +51,7 @@ function isDueNow(n, now) {
 function fireAdminNotification(n) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const notif = new Notification(`📢 ${n.title}`, {
-    body: n.note || 'Message from FinTrack',
+    body: n.note || 'Message from BuxBux',
     icon: '/favicon.ico',
     tag: `admin_${n.id}`,
   });

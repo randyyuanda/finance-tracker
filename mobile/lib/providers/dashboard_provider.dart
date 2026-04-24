@@ -15,13 +15,6 @@ class DashboardStats {
     required this.monthlyExpense,
     required this.monthlySavings,
   });
-
-  factory DashboardStats.fromJson(Map<String, dynamic> j) => DashboardStats(
-        totalBalance: (j['totalBalance'] as num?)?.toDouble() ?? 0,
-        monthlyIncome: (j['monthlyIncome'] as num?)?.toDouble() ?? 0,
-        monthlyExpense: (j['monthlyExpense'] as num?)?.toDouble() ?? 0,
-        monthlySavings: (j['monthlySavings'] as num?)?.toDouble() ?? 0,
-      );
 }
 
 class DashboardProvider extends ChangeNotifier {
@@ -42,14 +35,27 @@ class DashboardProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final res = await ApiClient.dio.get('/dashboard');
-      final data = res.data;
-      _stats = DashboardStats.fromJson(data['stats'] ?? data);
-      _recentTransactions = ((data['recentTransactions'] ?? []) as List)
-          .map((j) => Transaction.fromJson(j))
-          .toList();
+      final data = res.data as Map<String, dynamic>;
+
+      // Backend returns: { totalBalance, thisMonth: {income,expense,savings}, accounts, recentTransactions }
+      final thisMonth = data['thisMonth'] as Map<String, dynamic>? ?? {};
+      _stats = DashboardStats(
+        totalBalance: (data['totalBalance'] as num?)?.toDouble() ?? 0,
+        monthlyIncome: (thisMonth['income'] as num?)?.toDouble() ?? 0,
+        monthlyExpense: (thisMonth['expense'] as num?)?.toDouble() ?? 0,
+        monthlySavings: (thisMonth['savings'] as num?)?.toDouble() ?? 0,
+      );
+
       _accounts = ((data['accounts'] ?? []) as List)
+          .whereType<Map<String, dynamic>>()
           .map((j) => Account.fromJson(j))
           .toList();
+
+      _recentTransactions = ((data['recentTransactions'] ?? []) as List)
+          .whereType<Map<String, dynamic>>()
+          .map((j) => Transaction.fromJson(j))
+          .toList();
+
       _error = null;
     } catch (e) {
       _error = parseError(e);

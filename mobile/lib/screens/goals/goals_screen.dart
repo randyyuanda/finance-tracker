@@ -103,12 +103,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         if (deadline != null) 'deadline': deadline!.toIso8601String(),
                       };
                       final provider = context.read<GoalProvider>();
-                      if (goal == null) {
-                        await provider.create(data);
+                      final ok = goal == null
+                          ? await provider.create(data)
+                          : await provider.update(goal.id, data);
+                      if (!ctx.mounted) return;
+                      if (ok) {
+                        Navigator.pop(ctx);
                       } else {
-                        await provider.update(goal.id, data);
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(provider.error ?? 'Failed to save goal'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
-                      if (ctx.mounted) Navigator.pop(ctx);
                     },
                     child: Text(goal == null ? 'Create Goal' : 'Update Goal'),
                   ),

@@ -28,7 +28,7 @@ export default function Login() {
             <BankOutlined style={{ fontSize: 28, color: '#fff' }} />
           </div>
           <Title level={2} style={{ margin: 0, color: '#fff' }}>Welcome back</Title>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Sign in to your FinTrack account</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Sign in to your BuxBux account</Text>
         </Space>
 
         {(error || params.get('error')) && (

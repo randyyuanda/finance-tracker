@@ -84,7 +84,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> updateProfile(String name) async {
     try {
-      final res = await ApiClient.dio.put('/auth/profile', data: {'name': name});
+      final res = await ApiClient.dio.patch('/auth/profile', data: {'name': name});
       _user = User.fromJson(res.data['user'] ?? res.data);
       notifyListeners();
       return true;

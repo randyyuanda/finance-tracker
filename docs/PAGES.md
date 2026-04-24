@@ -1,4 +1,4 @@
-# FinTrack – Page & Feature Reference
+# BuxBux – Page & Feature Reference
 
 All pages across backend API, React frontend, and Flutter mobile.
 
