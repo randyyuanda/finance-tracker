@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
+import '../../main.dart';
 import '../../models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/transaction_tile.dart';
+import '../goals/goals_screen.dart';
+import '../reminders/reminders_screen.dart';
+import '../reports/reports_screen.dart';
+import '../simulations/simulasi_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -35,10 +40,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           slivers: [
             // ── Header ─────────────────────────────────────────────
             SliverAppBar(
-              expandedHeight: 200,
+              expandedHeight: 220,
               floating: false,
               pinned: true,
               flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.pin,
                 background: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -48,10 +54,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   child: SafeArea(
+                    bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
                             children: [
@@ -60,32 +68,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Hi, ${auth.user?.name.split(' ').first ?? ''}',
-                                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                      'Hi, ${auth.user?.name.split(' ').first ?? ''}!',
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 14),
                                     ),
-                                    const SizedBox(height: 2),
                                     const Text(
                                       'Financial Overview',
-                                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700),
                                     ),
                                   ],
                                 ),
                               ),
                               CircleAvatar(
-                                radius: 22,
+                                radius: 20,
                                 backgroundColor: Colors.white24,
                                 child: Text(
-                                  auth.user?.name.isNotEmpty == true ? auth.user!.name[0].toUpperCase() : 'U',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+                                  auth.user?.name.isNotEmpty == true
+                                      ? auth.user!.name[0].toUpperCase()
+                                      : 'U',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          const SizedBox(height: 16),
+                          const Text('Total Balance',
+                              style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          const SizedBox(height: 2),
                           Text(
-                            dash.stats != null ? formatCurrency(dash.stats!.totalBalance) : '—',
-                            style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800),
+                            dash.stats != null
+                                ? formatCurrency(dash.stats!.totalBalance)
+                                : '—',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800),
                           ),
                         ],
                       ),
@@ -98,7 +121,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
 
             if (dash.loading && dash.stats == null)
-              const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+              const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()))
             else ...[
               // ── Stats grid ─────────────────────────────────────────
               SliverPadding(
@@ -139,9 +163,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
+              // ── Feature quick-access ──────────────────────────────
+              _sectionHeader(context, 'Fitur'),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 90,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _FeatureChip(
+                        icon: Icons.track_changes,
+                        label: 'Goals',
+                        color: const Color(0xFF52C41A),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const GoalsScreen())),
+                      ),
+                      _FeatureChip(
+                        icon: Icons.notifications_outlined,
+                        label: 'Reminders',
+                        color: const Color(0xFFFFA940),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const RemindersScreen())),
+                      ),
+                      _FeatureChip(
+                        icon: Icons.home_outlined,
+                        label: 'Simulasi\nKPR',
+                        color: kPrimaryColor,
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const KprScreen())),
+                      ),
+                      _FeatureChip(
+                        icon: Icons.two_wheeler_outlined,
+                        label: 'Kredit\nMotor',
+                        color: const Color(0xFF52C41A),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const KreditMotorScreen())),
+                      ),
+                      _FeatureChip(
+                        icon: Icons.directions_car_outlined,
+                        label: 'Kredit\nMobil',
+                        color: const Color(0xFFFFA940),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const KreditMobilScreen())),
+                      ),
+                      _FeatureChip(
+                        icon: Icons.bar_chart_outlined,
+                        label: 'Reports',
+                        color: const Color(0xFF13C2C2),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const ReportsScreen())),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // ── Income vs Expense Chart ────────────────────────────
               if (dash.stats != null &&
-                  (dash.stats!.monthlyIncome > 0 || dash.stats!.monthlyExpense > 0)) ...[
+                  (dash.stats!.monthlyIncome > 0 ||
+                      dash.stats!.monthlyExpense > 0)) ...[
                 _sectionHeader(context, 'This Month'),
                 SliverToBoxAdapter(
                   child: Padding(
@@ -184,7 +265,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             gradient: LinearGradient(
-                              colors: [_hexColor(acc.color), _hexColor(acc.color).withValues(alpha: 0.7)],
+                              colors: [
+                                _hexColor(acc.color),
+                                _hexColor(acc.color).withValues(alpha: 0.7)
+                              ],
                             ),
                           ),
                           child: Column(
@@ -192,11 +276,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(acc.name,
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               Text(formatCurrency(acc.balance),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15)),
                             ],
                           ),
                         );
@@ -211,13 +301,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _sectionHeader(context, 'Recent Transactions'),
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (_, i) => TransactionTile(transaction: dash.recentTransactions[i]),
+                    (_, i) =>
+                        TransactionTile(transaction: dash.recentTransactions[i]),
                     childCount: dash.recentTransactions.length.clamp(0, 5),
                   ),
                 ),
               ],
 
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
             ],
           ],
         ),
@@ -228,7 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _sectionHeader(BuildContext context, String title) => SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         sliver: SliverToBoxAdapter(
-          child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          child: Text(title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       );
 
@@ -241,7 +333,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ── Stat card widget ────────────────────────────────────────────────────────
+// ── Feature chip ──────────────────────────────────────────────────────────────
+
+class _FeatureChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _FeatureChip(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.20)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Stat card widget ──────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   final String label;
@@ -249,7 +392,11 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
+  const _StatCard(
+      {required this.label,
+      required this.value,
+      required this.icon,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +406,10 @@ class _StatCard extends StatelessWidget {
         color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -278,9 +428,16 @@ class _StatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500)),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(value,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ],
           ),
         ],
@@ -289,7 +446,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Income vs Expense donut chart ───────────────────────────────────────────
+// ── Income vs Expense donut chart ─────────────────────────────────────────────
 
 class _IncomeExpenseChart extends StatelessWidget {
   final double income;
@@ -307,7 +464,10 @@ class _IncomeExpenseChart extends StatelessWidget {
         color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -318,18 +478,8 @@ class _IncomeExpenseChart extends StatelessWidget {
             child: PieChart(
               PieChartData(
                 sections: [
-                  PieChartSectionData(
-                    value: income,
-                    color: kIncomeColor,
-                    title: '',
-                    radius: 40,
-                  ),
-                  PieChartSectionData(
-                    value: expense,
-                    color: kExpenseColor,
-                    title: '',
-                    radius: 40,
-                  ),
+                  PieChartSectionData(value: income, color: kIncomeColor, title: '', radius: 40),
+                  PieChartSectionData(value: expense, color: kExpenseColor, title: '', radius: 40),
                 ],
                 sectionsSpace: 3,
                 centerSpaceRadius: 30,
@@ -342,10 +492,16 @@ class _IncomeExpenseChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _LegendRow(color: kIncomeColor, label: 'Income', value: formatCurrency(income),
+                _LegendRow(
+                    color: kIncomeColor,
+                    label: 'Income',
+                    value: formatCurrency(income),
                     pct: total > 0 ? (income / total * 100).round() : 0),
                 const SizedBox(height: 12),
-                _LegendRow(color: kExpenseColor, label: 'Expense', value: formatCurrency(expense),
+                _LegendRow(
+                    color: kExpenseColor,
+                    label: 'Expense',
+                    value: formatCurrency(expense),
                     pct: total > 0 ? (expense / total * 100).round() : 0),
                 const SizedBox(height: 12),
                 Divider(height: 1, color: Colors.grey.shade200),
@@ -371,12 +527,19 @@ class _LegendRow extends StatelessWidget {
   final String value;
   final int pct;
 
-  const _LegendRow({required this.color, required this.label, required this.value, required this.pct});
+  const _LegendRow(
+      {required this.color,
+      required this.label,
+      required this.value,
+      required this.pct});
 
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -385,11 +548,19 @@ class _LegendRow extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                    Text('$pct%', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    Text(label,
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('$pct%',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500)),
                   ],
                 ),
-                Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -397,7 +568,7 @@ class _LegendRow extends StatelessWidget {
       );
 }
 
-// ── Last 7 days spending bar chart ──────────────────────────────────────────
+// ── Last 7 days spending bar chart ────────────────────────────────────────────
 
 class _SpendingBarChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -407,7 +578,8 @@ class _SpendingBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day - (6 - i)));
+    final days =
+        List.generate(7, (i) => DateTime(now.year, now.month, now.day - (6 - i)));
     final incomeByDay = <int, double>{};
     final expenseByDay = <int, double>{};
 
@@ -434,7 +606,10 @@ class _SpendingBarChart extends StatelessWidget {
         color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -442,10 +617,12 @@ class _SpendingBarChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              _dot(kIncomeColor), const SizedBox(width: 4),
+              _dot(kIncomeColor),
+              const SizedBox(width: 4),
               const Text('Income', style: TextStyle(fontSize: 11)),
               const SizedBox(width: 12),
-              _dot(kExpenseColor), const SizedBox(width: 4),
+              _dot(kExpenseColor),
+              const SizedBox(width: 4),
               const Text('Expense', style: TextStyle(fontSize: 11)),
             ],
           ),
@@ -464,24 +641,28 @@ class _SpendingBarChart extends StatelessWidget {
                       getTitlesWidget: (v, _) {
                         final i = v.toInt();
                         if (i < 0 || i >= days.length) return const SizedBox();
-                        const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                        const labels = [
+                          'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+                        ];
                         final weekday = days[i].weekday - 1;
-                        return Text(labels[weekday], style: const TextStyle(fontSize: 10));
+                        return Text(labels[weekday],
+                            style: const TextStyle(fontSize: 10));
                       },
                       reservedSize: 20,
                     ),
                   ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: Colors.grey.withValues(alpha: 0.15),
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: Colors.grey.withValues(alpha: 0.15), strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: List.generate(7, (i) {
@@ -492,13 +673,15 @@ class _SpendingBarChart extends StatelessWidget {
                         toY: incomeByDay[i] ?? 0,
                         color: kIncomeColor.withValues(alpha: 0.85),
                         width: 10,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        borderRadius:
+                            const BorderRadius.vertical(top: Radius.circular(4)),
                       ),
                       BarChartRodData(
                         toY: expenseByDay[i] ?? 0,
                         color: kExpenseColor.withValues(alpha: 0.85),
                         width: 10,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        borderRadius:
+                            const BorderRadius.vertical(top: Radius.circular(4)),
                       ),
                     ],
                     barsSpace: 3,
@@ -512,5 +695,8 @@ class _SpendingBarChart extends StatelessWidget {
     );
   }
 
-  Widget _dot(Color c) => Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle));
+  Widget _dot(Color c) => Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: c, shape: BoxShape.circle));
 }

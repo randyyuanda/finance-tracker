@@ -6,9 +6,12 @@ import '../../core/theme.dart';
 import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../accounts/accounts_screen.dart';
+import '../goals/goals_screen.dart';
 import '../recurring/recurring_screen.dart';
+import '../reminders/reminders_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
+import '../simulations/simulasi_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -36,7 +39,7 @@ class _MoreScreenState extends State<MoreScreen> {
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(title: const Text('Account')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -54,11 +57,18 @@ class _MoreScreenState extends State<MoreScreen> {
                     child: CircleAvatar(
                       radius: 28,
                       backgroundColor: kPrimaryColor,
-                      backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
+                      backgroundImage: _localAvatarPath != null
+                          ? FileImage(File(_localAvatarPath!))
+                          : null,
                       child: _localAvatarPath == null
                           ? Text(
-                              user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                              user?.name.isNotEmpty == true
+                                  ? user!.name[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700),
                             )
                           : null,
                     ),
@@ -68,15 +78,20 @@ class _MoreScreenState extends State<MoreScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                        Text(user?.email ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                        Text(user?.name ?? '',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 16)),
+                        Text(user?.email ?? '',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 13)),
                       ],
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () async {
-                      await Navigator.push(context, slideRoute(const SettingsScreen()));
+                      await Navigator.push(
+                          context, slideRoute(const SettingsScreen()));
                       _loadAvatar();
                     },
                   ),
@@ -86,28 +101,78 @@ class _MoreScreenState extends State<MoreScreen> {
           ),
           const SizedBox(height: 8),
 
+          // ── Goals & Reminders ─────────────────────────────────────
+          _Section(title: 'Goals & Reminders', items: [
+            _MenuItem(
+              icon: Icons.track_changes_outlined,
+              label: 'Goals',
+              color: const Color(0xFF52C41A),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const GoalsScreen())),
+            ),
+            _MenuItem(
+              icon: Icons.notifications_outlined,
+              label: 'Reminders',
+              color: const Color(0xFFFFA940),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const RemindersScreen())),
+            ),
+          ]),
+          const SizedBox(height: 8),
+
+          // ── Finance ───────────────────────────────────────────────
           _Section(title: 'Finance', items: [
             _MenuItem(
               icon: Icons.account_balance_wallet_outlined,
               label: 'Accounts',
               color: kPrimaryColor,
-              onTap: () => Navigator.push(context, slideRoute(const AccountsScreen())),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const AccountsScreen())),
             ),
             _MenuItem(
               icon: Icons.autorenew,
               label: 'Recurring Transactions',
               color: const Color(0xFF722ED1),
-              onTap: () => Navigator.push(context, slideRoute(const RecurringScreen())),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const RecurringScreen())),
             ),
             _MenuItem(
               icon: Icons.bar_chart_outlined,
               label: 'Reports & Export',
               color: const Color(0xFF13C2C2),
-              onTap: () => Navigator.push(context, slideRoute(const ReportsScreen())),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const ReportsScreen())),
             ),
           ]),
           const SizedBox(height: 8),
 
+          // ── Simulators ────────────────────────────────────────────
+          _Section(title: 'Simulasi Kredit', items: [
+            _MenuItem(
+              icon: Icons.home_outlined,
+              label: 'Simulasi KPR',
+              color: kPrimaryColor,
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const KprScreen())),
+            ),
+            _MenuItem(
+              icon: Icons.two_wheeler_outlined,
+              label: 'Simulasi Kredit Motor',
+              color: const Color(0xFF52C41A),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const KreditMotorScreen())),
+            ),
+            _MenuItem(
+              icon: Icons.directions_car_outlined,
+              label: 'Simulasi Kredit Mobil',
+              color: const Color(0xFFFFA940),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const KreditMobilScreen())),
+            ),
+          ]),
+          const SizedBox(height: 8),
+
+          // ── App ───────────────────────────────────────────────────
           _Section(title: 'App', items: [
             _MenuItem(
               icon: Icons.settings_outlined,
@@ -128,10 +193,13 @@ class _MoreScreenState extends State<MoreScreen> {
                   builder: (_) => AlertDialog(
                     title: const Text('Sign out?'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel')),
                       TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Sign Out', style: TextStyle(color: Colors.red))),
+                          child: const Text('Sign Out',
+                              style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 );
@@ -141,6 +209,7 @@ class _MoreScreenState extends State<MoreScreen> {
               },
             ),
           ]),
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -159,7 +228,10 @@ class _Section extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
             child: Text(title,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600)),
           ),
           Card(
             child: Column(
@@ -168,7 +240,11 @@ class _Section extends StatelessWidget {
                 (i) => Column(children: [
                   items[i],
                   if (i < items.length - 1)
-                    Divider(height: 1, indent: 56, endIndent: 16, color: Colors.grey.shade100),
+                    Divider(
+                        height: 1,
+                        indent: 56,
+                        endIndent: 16,
+                        color: Colors.grey.shade100),
                 ]),
               ),
             ),
@@ -183,17 +259,24 @@ class _MenuItem extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
-  const _MenuItem({required this.icon, required this.label, required this.color, required this.onTap});
+  const _MenuItem(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) => ListTile(
         leading: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9)),
           child: Icon(icon, color: color, size: 18),
         ),
-        title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        title: Text(label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: onTap,
       );

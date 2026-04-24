@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
+import '../main.dart';
 import '../providers/reminder_provider.dart';
+import '../providers/transaction_provider.dart';
+import '../providers/dashboard_provider.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'transactions/transactions_screen.dart';
-import 'goals/goals_screen.dart';
-import 'reminders/reminders_screen.dart';
+import 'transactions/add_transaction_screen.dart';
+import 'reports/reports_screen.dart';
 import 'more/more_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,14 +20,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _currentIndex = 0;
   Timer? _adminPollTimer;
 
   static const _screens = [
     DashboardScreen(),
     TransactionsScreen(),
-    GoalsScreen(),
-    RemindersScreen(),
+    ReportsScreen(),
     MoreScreen(),
   ];
 
@@ -34,8 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final rp = context.read<ReminderProvider>();
       rp.fetchAll();
       rp.checkAdminNotifications();
-      // Poll admin notifications every 3 minutes so broadcasts created while
-      // the app is open are picked up and scheduled before their fire time.
       _adminPollTimer = Timer.periodic(const Duration(minutes: 3), (_) {
         if (mounted) context.read<ReminderProvider>().checkAdminNotifications();
       });
@@ -48,53 +49,113 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _openAddTransaction() async {
+    await Navigator.push(context, slideRoute(const AddTransactionScreen()));
+    if (mounted) {
+      context.read<TransactionProvider>().fetchAll();
+      context.read<DashboardProvider>().fetch();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final overdueCount = context.watch<ReminderProvider>().overdueCount;
-
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -2)),
+      body: IndexedStack(index: _currentIndex, children: _screens),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddTransaction,
+        backgroundColor: kPrimaryColor,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        child: const Icon(Icons.add, size: 28),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        elevation: 8,
+        height: 64,
+        child: Row(
+          children: [
+            Expanded(
+              child: _NavButton(
+                icon: Icons.dashboard_outlined,
+                activeIcon: Icons.dashboard,
+                label: 'Dashboard',
+                selected: _currentIndex == 0,
+                onTap: () => setState(() => _currentIndex = 0),
+              ),
+            ),
+            Expanded(
+              child: _NavButton(
+                icon: Icons.swap_horiz_outlined,
+                activeIcon: Icons.swap_horiz,
+                label: 'Transactions',
+                selected: _currentIndex == 1,
+                onTap: () => setState(() => _currentIndex = 1),
+              ),
+            ),
+            // Space for center FAB
+            const SizedBox(width: 72),
+            Expanded(
+              child: _NavButton(
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart,
+                label: 'Reports',
+                selected: _currentIndex == 2,
+                onTap: () => setState(() => _currentIndex = 2),
+              ),
+            ),
+            Expanded(
+              child: _NavButton(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Account',
+                selected: _currentIndex == 3,
+                onTap: () => setState(() => _currentIndex = 3),
+              ),
+            ),
           ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (i) => setState(() => _selectedIndex = i),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.swap_horiz_outlined),
-              activeIcon: Icon(Icons.swap_horiz),
-              label: 'Transactions',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.track_changes_outlined),
-              activeIcon: Icon(Icons.track_changes),
-              label: 'Goals',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: overdueCount > 0,
-                label: Text('$overdueCount'),
-                child: const Icon(Icons.notifications_outlined),
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavButton({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? kPrimaryColor : Colors.grey.shade500;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(selected ? activeIcon : icon, color: color, size: 22),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: color,
               ),
-              activeIcon: Badge(
-                isLabelVisible: overdueCount > 0,
-                label: Text('$overdueCount'),
-                child: const Icon(Icons.notifications),
-              ),
-              label: 'Reminders',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.more_horiz),
-              label: 'More',
             ),
           ],
         ),
