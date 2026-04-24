@@ -16,6 +16,7 @@ model User {
   password  String?
   googleId  String?  @unique
   avatar    String?
+  fcmToken  String?
   isDummy   Boolean  @default(false)
   isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())

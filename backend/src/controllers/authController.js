@@ -50,6 +50,17 @@ exports.getMe = async (req, res) => {
   res.json(req.user);
 };
 
+exports.saveFcmToken = async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) return res.status(400).json({ message: 'fcmToken required' });
+    await prisma.user.update({ where: { id: req.user.id }, data: { fcmToken } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.updateProfile = async (req, res) => {
   try {
     const { name, avatar } = req.body;

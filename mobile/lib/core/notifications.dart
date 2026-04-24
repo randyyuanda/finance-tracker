@@ -52,6 +52,21 @@ class NotificationService {
   static int _notifId(String id) => id.hashCode.abs();
   static int _adminNotifId(String id) => ('admin_$id').hashCode.abs();
 
+  /// Show a notification immediately (used for FCM foreground messages).
+  static Future<void> showImmediate({
+    required String id,
+    required String title,
+    String? body,
+  }) async {
+    if (!_initialized) return;
+    await _plugin.show(
+      _adminNotifId(id),
+      title,
+      body?.isNotEmpty == true ? body : 'Message from BuxBux',
+      _adminDetails,
+    );
+  }
+
   /// Schedule a user reminder at [when]. No-ops if [when] is in the past.
   static Future<void> schedule({
     required String id,

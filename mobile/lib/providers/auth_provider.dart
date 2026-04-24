@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/storage.dart';
@@ -21,12 +22,22 @@ class AuthProvider extends ChangeNotifier {
       try {
         final res = await ApiClient.dio.get('/auth/me');
         _user = User.fromJson(res.data['user'] ?? res.data);
+        _registerFcmToken();
       } catch (_) {
         await Storage.clearToken();
       }
     }
     _initialized = true;
     notifyListeners();
+  }
+
+  Future<void> _registerFcmToken() async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await ApiClient.dio.post('/auth/fcm-token', data: {'fcmToken': fcmToken});
+      }
+    } catch (_) {}
   }
 
   Future<bool> login(String email, String password) async {
@@ -41,6 +52,7 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(res.data['user']);
       _loading = false;
       notifyListeners();
+      _registerFcmToken();
       return true;
     } catch (e) {
       _error = parseError(e);
@@ -66,6 +78,7 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(res.data['user']);
       _loading = false;
       notifyListeners();
+      _registerFcmToken();
       return true;
     } catch (e) {
       _error = parseError(e);

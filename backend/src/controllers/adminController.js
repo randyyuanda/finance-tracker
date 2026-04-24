@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const fcmService = require('../services/fcmService');
 
 exports.getStats = async (req, res) => {
   try {
@@ -61,6 +62,7 @@ exports.broadcastReminder = async (req, res) => {
       return res.json({ message: 'No users to notify', count: 0 });
     }
 
+    // Save to DB (for polling fallback when app is open)
     await prisma.adminNotification.createMany({
       data: userIds.map((userId) => ({
         userId,
@@ -70,6 +72,19 @@ exports.broadcastReminder = async (req, res) => {
         repeatType: repeatType || 'none',
       })),
     });
+
+    // FCM push: delivers instantly even when app is closed/background
+    const usersWithTokens = await prisma.user.findMany({
+      where: { id: { in: userIds }, fcmToken: { not: null } },
+      select: { fcmToken: true },
+    });
+    const tokens = usersWithTokens.map((u) => u.fcmToken).filter(Boolean);
+    if (tokens.length > 0) {
+      await fcmService.sendToTokens(tokens, {
+        title: `📢 ${title}`,
+        body: note || 'New announcement from BuxBux',
+      });
+    }
 
     res.json({ message: `Notification sent to ${userIds.length} user(s)`, count: userIds.length });
   } catch (err) {

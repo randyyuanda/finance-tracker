@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/notifications.dart';
@@ -15,9 +17,33 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
 
+/// FCM background message handler — must be a top-level function.
+@pragma('vm:entry-point')
+Future<void> _fcmBackgroundHandler(RemoteMessage message) async {
+  // Firebase shows the notification automatically for background/terminated state.
+  // Nothing extra needed here.
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await NotificationService.initialize();
+
+  // Handle FCM messages when app is in the foreground
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    final n = message.notification;
+    if (n != null) {
+      NotificationService.showImmediate(
+        id: message.messageId ?? message.hashCode.toString(),
+        title: n.title ?? '',
+        body: n.body,
+      );
+    }
+  });
+
+  // Register the background handler
+  FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
+
   runApp(const BuxBuxApp());
 }
 
