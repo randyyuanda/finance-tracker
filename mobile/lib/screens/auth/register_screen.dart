@@ -16,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
 
@@ -23,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _phoneCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
   }
@@ -34,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _nameCtrl.text.trim(),
       _emailCtrl.text.trim(),
       _passCtrl.text,
+      _phoneCtrl.text.trim(),
     );
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +144,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   prefixIcon: const Icon(Icons.email_outlined),
                                 ),
                                 validator: (v) => v == null || !v.contains('@') ? s.email : null,
+                              ),
+                              const SizedBox(height: 14),
+                              TextFormField(
+                                controller: _phoneCtrl,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  labelText: 'Phone number (optional)',
+                                  prefixIcon: Icon(Icons.phone_outlined),
+                                ),
                               ),
                               const SizedBox(height: 14),
                               TextFormField(

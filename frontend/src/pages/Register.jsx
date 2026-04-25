@@ -47,6 +47,12 @@ export default function Register() {
               className="auth-input"
             />
           </Form.Item>
+          <Form.Item name="phone" rules={[{ required: false, message: 'Phone number' }]}>
+            <Input
+              placeholder="Phone number (optional)"
+              className="auth-input"
+            />
+          </Form.Item>
           <Form.Item name="password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
             <Input.Password
               prefix={<LockOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}

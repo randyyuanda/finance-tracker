@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import '../core/l10n.dart';
 import '../core/theme.dart';
@@ -7,6 +8,8 @@ import '../main.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/account_provider.dart';
+import '../providers/category_provider.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'transactions/transactions_screen.dart';
 import 'transactions/add_transaction_screen.dart';
@@ -38,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final rp = context.read<ReminderProvider>();
       rp.fetchAll();
       rp.checkAdminNotifications();
+      context.read<AccountProvider>().fetchAll();
+      context.read<CategoryProvider>().fetchAll();
       _adminPollTimer = Timer.periodic(const Duration(minutes: 3), (_) {
         if (mounted) context.read<ReminderProvider>().checkAdminNotifications();
       });

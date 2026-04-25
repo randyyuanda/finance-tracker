@@ -44,7 +44,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, double> get _categoryBreakdown {
     final map = <String, double>{};
     for (final t in _filtered.where((t) => t.type == 'expense')) {
-      final cat = t.categoryName ?? 'Other';
+      final cat = t.categoryName ?? context.l10n.other;
       map[cat] = (map[cat] ?? 0) + t.amount;
     }
     final sorted = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
@@ -53,8 +53,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportCsv() async {
     final all = context.read<TransactionProvider>().transactions;
+    final s = context.l10n;
     final buf = StringBuffer();
-    buf.writeln('Date,Type,Category,Account,Amount (IDR),Note');
+    buf.writeln('${s.date},${s.accountType},${s.category},${s.account},${s.amount} (IDR),${s.note}');
     for (final t in all) {
       final note = (t.note ?? '').replaceAll(',', ';');
       buf.writeln('${formatDate(t.date)},${t.type},${t.categoryName ?? ''},${t.accountName ?? ''},${t.amount.toStringAsFixed(0)},$note');
@@ -66,8 +67,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'text/csv')],
-      subject: 'BuxBux Transactions',
-      text: 'Here are my transactions exported from BuxBux.',
+      subject: s.csvExportSubject,
+      text: s.csvExportText,
     );
   }
 
@@ -151,14 +152,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 // ── Summary cards ───────────────────────────────────
                 Row(
                   children: [
-                    Expanded(child: _SummaryCard(label: 'Income', value: income, color: kIncomeColor, icon: Icons.arrow_downward_rounded)),
+                    Expanded(child: _SummaryCard(label: context.l10n.income, value: income, color: kIncomeColor, icon: Icons.arrow_downward_rounded)),
                     const SizedBox(width: 12),
-                    Expanded(child: _SummaryCard(label: 'Expense', value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded)),
+                    Expanded(child: _SummaryCard(label: context.l10n.expense, value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 _SummaryCard(
-                  label: 'Net Savings',
+                  label: context.l10n.netSavings,
                   value: income - expense,
                   color: income >= expense ? kIncomeColor : kExpenseColor,
                   icon: Icons.savings_outlined,
@@ -168,7 +169,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                 // ── Category breakdown ──────────────────────────────
                 if (breakdown.isNotEmpty) ...[
-                  const Text('Spending by Category', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(context.l10n.spendingByCategory, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -221,8 +222,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Transactions', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                    Text('${_filtered.length} total', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    Text(context.l10n.transactions, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                    Text(context.l10n.totalCount(_filtered.length), style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -230,7 +231,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Text('No transactions in $monthLabel',
+                      child: Text(context.l10n.noTransactionsIn(monthLabel),
                           style: TextStyle(color: Colors.grey.shade500)),
                     ),
                   )
@@ -319,7 +320,7 @@ class _TxRow extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(t.categoryName ?? 'Uncategorized', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(t.categoryName ?? context.l10n.uncategorized, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 Text('${t.accountName ?? ''} · ${formatDate(t.date)}',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade500), maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),

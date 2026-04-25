@@ -16,6 +16,11 @@ model User {
   password  String?
   googleId  String?  @unique
   avatar    String?
+  phone     String?   @unique
+  otpCode   String?
+  otpExpires DateTime?
+  language  String    @default("en")
+  currency  String    @default("IDR")
   fcmToken  String?
   isDummy   Boolean  @default(false)
   isAdmin   Boolean  @default(false)

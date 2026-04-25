@@ -14,7 +14,14 @@ export default function OAuthCallback() {
     const error = params.get('error');
     if (token) {
       dispatch(setToken(token));
-      dispatch(fetchMe()).then(() => navigate('/', { replace: true }));
+      dispatch(fetchMe()).then((res) => {
+        const user = res.payload;
+        if (user && (!user.hasPassword || !user.phone)) {
+          navigate('/set-password', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      });
     } else {
       navigate('/login?error=' + (error || 'oauth'), { replace: true });
     }

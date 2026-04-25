@@ -7,6 +7,7 @@ import '../../core/storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import 'quick_add_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -100,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveProfile() async {
     final s = context.l10n;
     final ok =
-        await context.read<AuthProvider>().updateProfile(_nameCtrl.text.trim());
+        await context.read<AuthProvider>().updateProfile(name: _nameCtrl.text.trim());
     if (mounted) {
       setState(() => _editing = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -251,9 +252,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   DropdownMenuItem(value: 'zh', child: Text('中文')),
                 ],
                 onChanged: (v) {
-                  if (v != null) themeProvider.setLanguage(v);
+                  if (v != null) themeProvider.setLanguage(v, context: context);
                 },
               ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          _SettingCard(
+            icon: Icons.monetization_on_outlined,
+            iconColor: const Color(0xFF52C41A),
+            title: s.currency,
+            trailing: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: themeProvider.currency,
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: 'IDR', child: Text('IDR')),
+                  DropdownMenuItem(value: 'USD', child: Text('USD')),
+                  DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                  DropdownMenuItem(value: 'SGD', child: Text('SGD')),
+                ],
+                onChanged: (v) {
+                  if (v != null) themeProvider.setCurrency(v, context: context);
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Shortcuts ─────────────────────────────────────────────
+          _SectionLabel(label: s.shortcuts),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            tileColor: Theme.of(context).cardTheme.color,
+            leading: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: kPrimaryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: const Icon(Icons.bolt, color: kPrimaryColor, size: 18),
+            ),
+            title: Text(s.quickAddSettings, style: const TextStyle(fontWeight: FontWeight.w500)),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const QuickAddSettingsScreen()),
             ),
           ),
 

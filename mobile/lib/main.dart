@@ -1,9 +1,16 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/api.dart';
+import 'core/l10n.dart';
+import 'core/storage.dart';
 import 'core/notifications.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
@@ -15,21 +22,149 @@ import 'providers/recurring_provider.dart';
 import 'providers/reminder_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/quick_add_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/set_password_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/transactions/add_transaction_screen.dart';
+import 'screens/transactions/quick_add_screen.dart';
 
 /// FCM background message handler — must be a top-level function.
 @pragma('vm:entry-point')
 Future<void> _fcmBackgroundHandler(RemoteMessage message) async {
-  // Firebase shows the notification automatically for background/terminated state.
-  // Nothing extra needed here.
+  // Firebase shows the notification automatically
+}
+
+/// HomeWidget background callback — must be a top-level function.
+@pragma('vm:entry-point')
+Future<void> _homeWidgetBackgroundHandler(Uri? uri) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  if (uri == null) return;
+  debugPrint('BuxBux Background URI: $uri');
+  
+  if (uri.scheme == 'buxbux' && uri.host == 'quickadd') {
+    final type = uri.queryParameters['type'] ?? 'expense';
+    final amountStr = uri.queryParameters['amount'] ?? '0';
+    final amount = double.tryParse(amountStr) ?? 0;
+    
+    final customAccountId = uri.queryParameters['accountId'];
+    final customCategoryId = uri.queryParameters['categoryId'];
+    final customNote = uri.queryParameters['note'];
+    
+    try {
+      await NotificationService.initialize(fromBackground: true);
+      
+      final lang = await Storage.getLanguage();
+      final l10n = AppL10n.fromLang(lang);
+      
+      final token = await Storage.getToken();
+      if (token == null) {
+        debugPrint('Background Log Error: No token found');
+        await NotificationService.showImmediate(
+          id: 'error_auth',
+          title: l10n.authRequired,
+          body: l10n.authRequiredMsg,
+        );
+        return;
+      }
+      
+      final dio = Dio(BaseOptions(
+        baseUrl: kApiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ));
+      
+      String? accountId = customAccountId;
+      String? categoryId = customCategoryId;
+
+      // If custom IDs are missing, fetch defaults
+      if ((accountId == null || accountId.isEmpty) || (categoryId == null || categoryId.isEmpty)) {
+        debugPrint('Background Log: Fetching accounts/categories for defaults...');
+        final responses = await Future.wait([
+          dio.get('/accounts'),
+          dio.get('/categories'),
+        ]);
+        
+        final accounts = responses[0].data as List;
+        final categories = responses[1].data as List;
+        
+        if (accounts.isNotEmpty && (accountId == null || accountId.isEmpty)) {
+          accountId = accounts.first['id'] ?? accounts.first['_id'];
+        }
+        
+        if (categories.isNotEmpty && (categoryId == null || categoryId.isEmpty)) {
+          final filteredCats = categories.where((c) => c['type'] == type).toList();
+          final targetCat = filteredCats.isNotEmpty ? filteredCats.first : categories.first;
+          categoryId = targetCat['id'] ?? targetCat['_id'];
+        }
+      }
+      
+      if (accountId == null || categoryId == null) {
+        throw Exception('Account or Category not found.');
+      }
+
+      // 2. Log the transaction
+      debugPrint('Background Log: Posting transaction...');
+      await dio.post('/transactions', 
+        data: {
+          'type': type,
+          'amount': amount,
+          'accountId': accountId,
+          'categoryId': categoryId,
+          'date': DateTime.now().toIso8601String(),
+          'note': (customNote != null && customNote.isNotEmpty) ? customNote : 'Quick Add from Widget',
+        }
+      );
+
+      // 3. Show success notification
+      debugPrint('Background Log: Success!');
+      final typeLabel = type == 'income' ? l10n.income : l10n.expense;
+      await NotificationService.showImmediate(
+        id: DateTime.now().hashCode.toString(),
+        title: l10n.transactionLogged,
+        body: l10n.transactionAddedBody(typeLabel, amountStr),
+      );
+
+      // 4. Update the widget balance
+      final balRes = await dio.get('/accounts/balance');
+      final totalBal = balRes.data['totalBalance'] ?? 0;
+      await HomeWidget.saveWidgetData('balance', 'Rp $totalBal');
+      await HomeWidget.updateWidget(name: 'BuxBuxWidgetProvider');
+    } catch (e) {
+      debugPrint('Background Log Error: $e');
+      String msg = e.toString().replaceFirst('Exception: ', '');
+      if (e is DioException) {
+        msg = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      }
+      
+      await NotificationService.showImmediate(
+        id: 'error_log',
+        title: 'Quick Add Failed',
+        body: msg,
+      );
+    }
+  }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await NotificationService.initialize();
+  HomeWidget.registerBackgroundCallback(_homeWidgetBackgroundHandler);
+
+  final auth = AuthProvider();
+  final theme = ThemeProvider();
+  final reminder = ReminderProvider();
+  final quickAdd = QuickAddProvider();
+    
+  await Future.wait([
+    auth.initialize(),
+    theme.initialize(),
+    quickAdd.initialize(),
+  ]);
 
   // Handle FCM messages when app is in the foreground
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -50,7 +185,23 @@ void main() async {
   // so FCM messages arrive even when the app is killed.
   _requestBatteryExemption();
 
-  runApp(const BuxBuxApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: theme),
+        ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider(create: (_) => AccountProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => GoalProvider()),
+        ChangeNotifierProvider(create: (_) => RecurringProvider()),
+        ChangeNotifierProvider.value(value: reminder),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider.value(value: quickAdd),
+      ],
+      child: const BuxBuxApp(),
+    ),
+  );
 }
 
 Future<void> _requestBatteryExemption() async {
@@ -87,20 +238,7 @@ class BuxBuxApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => AccountProvider()),
-        ChangeNotifierProvider(create: (_) => CategoryProvider()),
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => GoalProvider()),
-        ChangeNotifierProvider(create: (_) => RecurringProvider()),
-        ChangeNotifierProvider(create: (_) => ReminderProvider()),
-        ChangeNotifierProvider(create: (_) => DashboardProvider()),
-      ],
-      child: const _AppRoot(),
-    );
+    return const _AppRoot();
   }
 }
 
@@ -142,18 +280,74 @@ class _AppRootState extends State<_AppRoot> {
       home: !auth.initialized
           ? const _SplashScreen()
           : auth.isAuthenticated
-              ? const HomeScreen()
+              ? (!auth.user!.hasPassword || auth.user!.phone == null || auth.user!.phone!.isEmpty)
+                  ? const SetPasswordScreen()
+                  : const _DeepLinkHandler(child: HomeScreen())
               : const LoginScreen(),
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/login':    return slideRoute(const LoginScreen());
           case '/register': return slideRoute(const RegisterScreen());
+          case '/forgot_password': return slideRoute(const ForgotPasswordScreen());
+          case '/set_password': return fadeRoute(const SetPasswordScreen());
           case '/home':     return fadeRoute(const HomeScreen());
+          case '/add_transaction':
+            final type = settings.arguments as String?;
+            return slideRoute(AddTransactionScreen(initialType: type));
+          case '/quick_add':
+            final type = settings.arguments as String? ?? 'expense';
+            return fadeRoute(QuickAddScreen(type: type));
           default:          return null;
         }
       },
     );
   }
+}
+
+/// A wrapper that listens for deep links/widget clicks and navigates accordingly.
+class _DeepLinkHandler extends StatefulWidget {
+  final Widget child;
+  const _DeepLinkHandler({required this.child});
+
+  @override
+  State<_DeepLinkHandler> createState() => _DeepLinkHandlerState();
+}
+
+class _DeepLinkHandlerState extends State<_DeepLinkHandler> {
+  StreamSubscription? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinkHandling();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initDeepLinkHandling() async {
+    // 1. Handle initial launch URI
+    final initialUri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+    if (initialUri != null) _handleUri(initialUri);
+
+    // 2. Listen for subsequent clicks while app is running
+    _sub = HomeWidget.widgetClicked.listen((uri) {
+      if (uri != null) _handleUri(uri);
+    });
+  }
+
+  void _handleUri(Uri uri) {
+    if (uri.scheme == 'buxbux' && uri.host == 'add') {
+      final type = uri.queryParameters['type'] ?? 'expense';
+      Navigator.pushNamed(context, '/quick_add', arguments: type);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 Locale _localeFromLang(String lang) {

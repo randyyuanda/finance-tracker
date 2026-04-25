@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../widgets/gradient_button.dart';
@@ -27,48 +28,81 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _sending = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _sending = false);
-    final s = context.l10n;
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    colors: [Color(0xFF52C41A), Color(0xFF237804)]),
-                borderRadius: BorderRadius.circular(32),
+
+    try {
+      final dio = Dio();
+      const token = '8338939130:AAEt90U1hVWnDW-L5lMjEDg0e4f6rgb_wP0';
+      // Note: In a real scenario, the chatId should be stored securely or fetched.
+      // Using a placeholder group ID - you may need to update this to your actual group ID.
+      const chatId = '-1003947269519'; 
+
+      final message = '🚀 *New Feedback from BuxBux*\n\n'
+          '👤 *Category:* ${_category.toUpperCase()}\n'
+          '📌 *Subject:* ${_subjectCtrl.text.replaceAll('*', '\\*').replaceAll('_', '\\_')}\n'
+          '💬 *Message:* ${_messageCtrl.text.replaceAll('*', '\\*').replaceAll('_', '\\_')}';
+
+      await dio.post(
+        'https://api.telegram.org/bot$token/sendMessage',
+        data: {
+          'chat_id': chatId,
+          'text': message,
+          'parse_mode': 'Markdown',
+        },
+      );
+
+      if (!mounted) return;
+      setState(() => _sending = false);
+      
+      final s = context.l10n;
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF52C41A), Color(0xFF237804)]),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 32),
               ),
-              child: const Icon(Icons.check, color: Colors.white, size: 32),
+              const SizedBox(height: 16),
+              Text(s.feedbackSentTitle,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(s.feedbackSentMsg,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('Done'),
             ),
-            const SizedBox(height: 16),
-            Text(s.feedbackSentTitle,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(s.feedbackSentMsg,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Feedback Error: $e');
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send feedback: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/widget_service.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 
@@ -57,6 +58,7 @@ class DashboardProvider extends ChangeNotifier {
           .toList();
 
       _error = null;
+      WidgetService.updateBalance(_stats!.totalBalance);
     } catch (e) {
       _error = parseError(e);
     }

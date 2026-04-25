@@ -3,14 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/l10n.dart';
 import '../../core/theme.dart';
+import '../../core/notifications.dart';
+import '../../core/input_formatters.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/account.dart';
 import '../../models/category.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final String? initialType;
+  const AddTransactionScreen({super.key, this.initialType});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -20,7 +24,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  String _type = 'expense';
+  late String _type;
+
+  @override
+  void initState() {
+    super.initState();
+    _type = widget.initialType == 'income' ? 'income' : 'expense';
+  }
   String? _accountId;
   String? _categoryId;
   DateTime _date = DateTime.now();
@@ -43,15 +53,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
       return;
     }
+    final amount = double.tryParse(_amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     final ok = await context.read<TransactionProvider>().create({
       'type': _type,
-      'amount': double.parse(_amountCtrl.text.replaceAll(',', '')),
+      'amount': amount,
       'accountId': _accountId,
       'categoryId': _categoryId,
       'date': _date.toIso8601String(),
       'note': _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
     });
-    if (ok && mounted) Navigator.pop(context, true);
+    if (ok && mounted) {
+      final typeLabel = _type == 'income' ? context.l10n.income : context.l10n.expense;
+      await NotificationService.showImmediate(
+        id: DateTime.now().hashCode.toString(),
+        title: context.l10n.transactionLogged,
+        body: context.l10n.transactionAddedBody(typeLabel, _amountCtrl.text),
+      );
+      Navigator.pop(context, true);
+    }
     else if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.read<TransactionProvider>().error ?? 'Failed'), backgroundColor: kExpenseColor),
@@ -100,7 +119,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          t == 'income' ? 'Income' : 'Expense',
+                          t == 'income' ? context.l10n.income : context.l10n.expense,
                           style: TextStyle(
                             color: selected ? Colors.white : null,
                             fontWeight: FontWeight.w600,
@@ -117,30 +136,33 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             // Amount
             TextFormField(
               controller: _amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))],
-              decoration: const InputDecoration(labelText: 'Amount (IDR)', prefixIcon: Icon(Icons.payments_outlined)),
-              validator: (v) => v == null || v.isEmpty ? 'Enter amount' : null,
+              keyboardType: TextInputType.number,
+              inputFormatters: [AmountInputFormatter()],
+              decoration: InputDecoration(
+                labelText: '${context.l10n.amount} (${context.read<ThemeProvider>().currency})',
+                prefixIcon: const Icon(Icons.payments_outlined),
+              ),
+              validator: (v) => v == null || v.isEmpty ? context.l10n.amountRequired : null,
             ),
             const SizedBox(height: 16),
 
             // Account
             DropdownButtonFormField<String>(
               value: _accountId,
-              decoration: const InputDecoration(labelText: 'Account', prefixIcon: Icon(Icons.account_balance_wallet_outlined)),
+              decoration: InputDecoration(labelText: context.l10n.account, prefixIcon: const Icon(Icons.account_balance_wallet_outlined)),
               items: accounts.map((Account a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => _accountId = v),
-              validator: (v) => v == null ? 'Select account' : null,
+              validator: (v) => v == null ? context.l10n.accountRequired : null,
             ),
             const SizedBox(height: 16),
 
             // Category
             DropdownButtonFormField<String>(
               value: _categoryId,
-              decoration: const InputDecoration(labelText: 'Category', prefixIcon: Icon(Icons.category_outlined)),
+              decoration: InputDecoration(labelText: context.l10n.category, prefixIcon: const Icon(Icons.category_outlined)),
               items: categories.map((Category c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
               onChanged: (v) => setState(() => _categoryId = v),
-              validator: (v) => v == null ? 'Select category' : null,
+              validator: (v) => v == null ? context.l10n.categoryRequired : null,
             ),
             const SizedBox(height: 16),
 
@@ -166,7 +188,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
             ElevatedButton(
               onPressed: context.watch<TransactionProvider>().loading ? null : _submit,
-              child: const Text('Save Transaction'),
+              child: Text(context.l10n.saveTransaction),
             ),
           ],
         ),

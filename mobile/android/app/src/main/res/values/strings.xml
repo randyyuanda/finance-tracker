@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BuxBux</string>
+    <string name="widget_balance_label">BuxBux Transactions</string>
+    <string name="widget_balance_desc">View your current balance and quick add buttons.</string>
+    <string name="widget_quickadd_label">BuxBux Quick Add</string>
+    <string name="widget_quickadd_desc">Log expenses and income with one tap.</string>
+</resources>

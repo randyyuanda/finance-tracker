@@ -6,7 +6,7 @@ class AppL10n {
   AppL10n._(this._lang);
 
   factory AppL10n.of(BuildContext ctx) =>
-      AppL10n._(ctx.watch<ThemeProvider>().language);
+      AppL10n._(ctx.read<ThemeProvider>().language);
 
   final String _lang;
 
@@ -63,7 +63,7 @@ class AppL10n {
   String get dashboardTitle => _t('Dashboard', 'Beranda', '主页');
   String get totalBalance => _t('Total Balance', 'Total Saldo', '总余额');
   String get financialOverview =>
-      _t('Financial Overview', 'Ikhtisar Keuangan', '财务概览');
+      _t('Financial Overview', 'Ringkasan Keuangan', '财务概览');
   String get hi => _t('Hi', 'Hai', '嗨');
   String get netSavings => _t('Net Savings', 'Tabungan Bersih', '净储蓄');
   String get thisMonth => _t('This Month', 'Bulan Ini', '本月');
@@ -84,6 +84,45 @@ class AppL10n {
   String get optional => _t('Optional', 'Opsional', '可选');
   String get noTransactions =>
       _t('No transactions yet', 'Belum ada transaksi', '暂无交易记录');
+  String get spendingByCategory =>
+      _t('Spending by Category', 'Analisis Pengeluaran', '按类别支出');
+  String totalCount(int count) => _t('$count total', '$count total', '$count 共计');
+  String noTransactionsIn(String month) => _t(
+        'No transactions in $month',
+        'Tidak ada transaksi pada $month',
+        '$month 暂无交易记录',
+      );
+  String get uncategorized => _t('Uncategorized', 'Tanpa Kategori', '未分类');
+  String get other => _t('Other', 'Lainnya', '其他');
+  String get currency => _t('Currency', 'Mata Uang', '货币');
+  String get shortcuts => _t('Shortcuts', 'Pintasan', '快捷方式');
+  String get quickAddSettings => _t('Quick Add Settings', 'Pengaturan Tambah Cepat', '快速添加设置');
+  String get editQuickAdd => _t('Edit Quick Add', 'Edit Tambah Cepat', '编辑快速添加');
+  String get label => _t('Label', 'Label', '标签');
+  String get amountRequired => _t('Amount is required', 'Jumlah harus diisi', '请输入金额');
+  String get accountRequired => _t('Account is required', 'Akun harus dipilih', '请选择账户');
+  String get categoryRequired => _t('Category is required', 'Kategori harus dipilih', '请选择类别');
+  String get saveTransaction => _t('Save Transaction', 'Simpan Transaksi', '保存交易');
+  String get csvExportSubject => _t('BuxBux Transactions', 'Transaksi BuxBux', 'BuxBux 交易记录');
+  String get csvExportText => _t('Here are my transactions exported from BuxBux.', 'Berikut adalah riwayat transaksi saya dari BuxBux.', '这是我从 BuxBux 导出的交易记录。');
+
+  // ── Notifications ───────────────────────────────────────────────
+  String get transactionLogged => _t('Transaction Logged', 'Transaksi Dicatat', '交易已记录');
+  String get authRequired => _t('Authentication Required', 'Butuh Autentikasi', '需要身份验证');
+  String get authRequiredMsg => _t('Please open BuxBux and log in.', 'Silakan buka BuxBux dan masuk.', '请打开 BuxBux 并登录。');
+  String transactionAddedBody(String type, String amount) => _t(
+        '$type of Rp $amount added.',
+        '$type Rp $amount telah ditambahkan.',
+        '已添加 $amount 的 $type。',
+      );
+
+  static AppL10n fromLang(String lang) => AppL10n._(lang);
+
+  // ── Widgets ────────────────────────────────────────────────────
+  String get widgetTransactions => _t('TRANSACTIONS', 'TRANSAKSI', '交易记录');
+  String get widgetIncome => _t('INCOME', 'MASUK', '收入');
+  String get widgetExpense => _t('EXPENSE', 'KELUAR', '支出');
+  String get widgetQuickAdd => _t('QUICK ADD', 'TAMBAH CEPAT', '快速添加');
 
   // ── Goals ───────────────────────────────────────────────────────
   String get goals => _t('Goals', 'Target', '目标');

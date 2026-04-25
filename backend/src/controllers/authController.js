@@ -10,15 +10,20 @@ const generateToken = (id) =>
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     if (!name || !email || !password)
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'Name, email, and password are required' });
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
+    
+    if (phone) {
+      const existingPhone = await prisma.user.findUnique({ where: { phone } });
+      if (existingPhone) return res.status(400).json({ message: 'Phone number already registered' });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { name, email, password: hashed } });
+    const user = await prisma.user.create({ data: { name, email, password: hashed, phone } });
     await seedUserDefaults(user.id);
 
     res.status(201).json({ token: generateToken(user.id), user: fmtUser(user) });
@@ -84,4 +89,86 @@ exports.googleCallback = async (req, res) => {
   const token = generateToken(req.user.id);
   const clientUrl = (process.env.CLIENT_URL || 'http://localhost:3000').split(',')[0].trim();
   res.redirect(`${clientUrl}/oauth-callback?token=${token}`);
+};
+
+exports.setPassword = async (req, res) => {
+  try {
+    const { password, phone } = req.body;
+    if (!password) return res.status(400).json({ message: 'Password is required' });
+
+    const data = { password: await bcrypt.hash(password, 10) };
+    if (phone) data.phone = phone;
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+    });
+    res.json(fmtUser(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const { sendOtpEmail } = require('../services/emailService');
+
+exports.requestOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60000); // 15 mins
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { otpCode: await bcrypt.hash(otp, 10), otpExpires: expires },
+    });
+
+    const sent = await sendOtpEmail(email, otp);
+    if (!sent) return res.status(500).json({ message: 'Failed to send OTP email' });
+
+    res.json({ message: 'OTP sent to email' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.otpCode || !user.otpExpires)
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+    if (user.otpExpires < new Date())
+      return res.status(400).json({ message: 'OTP has expired' });
+
+    const match = await bcrypt.compare(otp, user.otpCode);
+    if (!match) return res.status(400).json({ message: 'Invalid OTP' });
+
+    res.json({ message: 'OTP verified successfully', token: generateToken(user.id) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    // We expect the user to pass the token obtained from verifyOtp in the header,
+    // so this is a protected route. Or they can reset it immediately after verification.
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Password is required' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashed, otpCode: null, otpExpires: null },
+    });
+
+    res.json(fmtUser(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

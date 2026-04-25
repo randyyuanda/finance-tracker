@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/api.dart';
 import '../../core/formatters.dart';
 import '../../core/l10n.dart';
+import '../../core/storage.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
 import '../../models/transaction.dart';
@@ -22,12 +25,20 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  String? _localAvatarPath;
+
   @override
   void initState() {
     super.initState();
+    _loadLocalAvatar();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().fetch();
     });
+  }
+
+  Future<void> _loadLocalAvatar() async {
+    final path = await Storage.getLocalAvatar();
+    if (mounted) setState(() => _localAvatarPath = path);
   }
 
   @override
@@ -87,15 +98,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               CircleAvatar(
                                 radius: 20,
                                 backgroundColor: Colors.white24,
-                                child: Text(
-                                  auth.user?.name.isNotEmpty == true
-                                      ? auth.user!.name[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16),
-                                ),
+                                backgroundImage: _localAvatarPath != null
+                                    ? FileImage(File(_localAvatarPath!)) as ImageProvider<Object>
+                                    : (auth.user?.avatar != null && auth.user!.avatar!.isNotEmpty)
+                                        ? NetworkImage(auth.user!.avatar!.startsWith('http') 
+                                            ? auth.user!.avatar! 
+                                            : '${ApiClient.dio.options.baseUrl}${auth.user!.avatar!}') as ImageProvider<Object>
+                                        : null,
+                                child: (_localAvatarPath == null && (auth.user?.avatar == null || auth.user!.avatar!.isEmpty))
+                                    ? Text(
+                                        auth.user?.name.isNotEmpty == true
+                                            ? auth.user!.name[0].toUpperCase()
+                                            : 'U',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16),
+                                      )
+                                    : null,
                               ),
                             ],
                           ),
@@ -496,13 +516,13 @@ class _IncomeExpenseChart extends StatelessWidget {
               children: [
                 _LegendRow(
                     color: kIncomeColor,
-                    label: 'Income',
+                    label: context.l10n.income,
                     value: formatCurrency(income),
                     pct: total > 0 ? (income / total * 100).round() : 0),
                 const SizedBox(height: 12),
                 _LegendRow(
                     color: kExpenseColor,
-                    label: 'Expense',
+                    label: context.l10n.expense,
                     value: formatCurrency(expense),
                     pct: total > 0 ? (expense / total * 100).round() : 0),
                 const SizedBox(height: 12),
@@ -621,11 +641,11 @@ class _SpendingBarChart extends StatelessWidget {
             children: [
               _dot(kIncomeColor),
               const SizedBox(width: 4),
-              const Text('Income', style: TextStyle(fontSize: 11)),
+              Text(context.l10n.income, style: const TextStyle(fontSize: 11)),
               const SizedBox(width: 12),
               _dot(kExpenseColor),
               const SizedBox(width: 4),
-              const Text('Expense', style: TextStyle(fontSize: 11)),
+              Text(context.l10n.expense, style: const TextStyle(fontSize: 11)),
             ],
           ),
           const SizedBox(height: 12),
@@ -635,7 +655,18 @@ class _SpendingBarChart extends StatelessWidget {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY * 1.2,
-                barTouchData: BarTouchData(enabled: false),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => Colors.blueGrey.withValues(alpha: 0.9),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        formatCurrency(rod.toY),
+                        const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                      );
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(

@@ -5,7 +5,10 @@ final _dateFmt = DateFormat('MMM d, yyyy');
 final _dateTimeFmt = DateFormat('MMM d, yyyy HH:mm');
 final _monthFmt = DateFormat('MMM yyyy');
 
-String formatCurrency(num amount) => 'IDR ${_currencyFmt.format(amount)}';
+String formatCurrency(num amount, {String? currency}) {
+  final code = currency ?? 'IDR';
+  return '$code ${_currencyFmt.format(amount)}';
+}
 
 String formatDate(DateTime date) => _dateFmt.format(date);
 

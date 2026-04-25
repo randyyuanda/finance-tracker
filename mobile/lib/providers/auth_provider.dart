@@ -62,7 +62,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register(String name, String email, String password, [String? phone]) async {
     _loading = true;
     _error = null;
     notifyListeners();
@@ -71,6 +71,7 @@ class AuthProvider extends ChangeNotifier {
         'name': name,
         'email': email,
         'password': password,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
       });
       final token = res.data['token'];
       await Storage.saveToken(token);
@@ -95,14 +96,95 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateProfile(String name) async {
+  Future<bool> updateProfile({String? name, String? language, String? currency}) async {
     try {
-      final res = await ApiClient.dio.patch('/auth/profile', data: {'name': name});
+      final data = <String, dynamic>{};
+      if (name != null) data['name'] = name;
+      if (language != null) data['language'] = language;
+      if (currency != null) data['currency'] = currency;
+      
+      final res = await ApiClient.dio.patch('/auth/profile', data: data);
       _user = User.fromJson(res.data['user'] ?? res.data);
       notifyListeners();
       return true;
     } catch (e) {
       _error = parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> setPassword(String password, String? phone) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final data = <String, dynamic>{'password': password};
+      if (phone != null && phone.isNotEmpty) data['phone'] = phone;
+
+      final res = await ApiClient.dio.post('/auth/set-password', data: data);
+      _user = User.fromJson(res.data['user'] ?? res.data);
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> requestOtp(String email) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await ApiClient.dio.post('/auth/request-otp', data: {'email': email});
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp(String email, String otp) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final res = await ApiClient.dio.post('/auth/verify-otp', data: {'email': email, 'otp': otp});
+      final token = res.data['token'];
+      await Storage.saveToken(token);
+      ApiClient.reset();
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String password) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final res = await ApiClient.dio.post('/auth/reset-password', data: {'password': password});
+      _user = User.fromJson(res.data['user'] ?? res.data);
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
       notifyListeners();
       return false;
     }

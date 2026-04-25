@@ -4,8 +4,8 @@
 
 const fmtUser = (u) => {
   if (!u) return u;
-  const { password, ...rest } = u;
-  return { ...rest, _id: u.id };
+  const { password, otpCode, otpExpires, ...rest } = u;
+  return { ...rest, _id: u.id, hasPassword: !!password };
 };
 
 const fmtAccount = (a) => a ? { ...a, _id: a.id } : a;

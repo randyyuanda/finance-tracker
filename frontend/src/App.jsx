@@ -25,11 +25,16 @@ const Spinner = () => (
   </div>
 );
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children, allowIncomplete = false }) {
   const { token, user, loading } = useSelector((s) => s.auth);
   if (loading) return <Spinner />;
   if (!token) return <Navigate to="/login" replace />;
   if (!user) return <Spinner />;
+  
+  if (!allowIncomplete && (!user.hasPassword || !user.phone)) {
+    return <Navigate to="/set-password" replace />;
+  }
+
   // Admin users must use the /admin route
   if (user.isAdmin) return <Navigate to="/admin" replace />;
   return children;
@@ -50,6 +55,10 @@ function PublicRoute({ children }) {
   return <Navigate to={user?.isAdmin ? '/admin' : '/'} replace />;
 }
 
+import SetPassword from './pages/SetPassword';
+
+import ForgotPassword from './pages/ForgotPassword';
+
 export default function App() {
   const dispatch = useDispatch();
   const { token } = useSelector((s) => s.auth);
@@ -63,7 +72,9 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
+        <Route path="/set-password" element={<PrivateRoute allowIncomplete={true}><SetPassword /></PrivateRoute>} />
 
         {/* Admin */}
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

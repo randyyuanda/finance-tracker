@@ -65,6 +65,11 @@ export default function Login() {
           >
             Sign In
           </Button>
+          <div style={{ textAlign: 'right' }}>
+            <Link to="/forgot-password" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
+              Forgot Password?
+            </Link>
+          </div>
         </Form>
 
         <Divider style={{ borderColor: 'rgba(255,255,255,0.2)', margin: '16px 0' }}>

@@ -154,6 +154,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: s.signIn,
                           loading: loading,
                         ),
+                        const SizedBox(height: 14),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pushNamed(context, '/forgot_password'),
+                            child: const Text('Forgot Password?', style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
+                          ),
+                        ),
                         const SizedBox(height: 22),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,

@@ -4,6 +4,8 @@ class Storage {
   static const _tokenKey = 'auth_token';
   static const _themeKey = 'theme_mode';
   static const _langKey = 'language';
+  static const _currencyKey = 'currency';
+  static const _quickAddsKey = 'quick_add_configs';
   static const _avatarKey = 'local_avatar_path';
 
   static Future<void> saveToken(String token) async {
@@ -39,6 +41,26 @@ class Storage {
   static Future<String> getLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_langKey) ?? 'en';
+  }
+
+  static Future<void> saveCurrency(String cur) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_currencyKey, cur);
+  }
+
+  static Future<String> getCurrency() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_currencyKey) ?? 'IDR';
+  }
+
+  static Future<void> saveQuickAdds(String json) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_quickAddsKey, json);
+  }
+
+  static Future<String?> getQuickAdds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_quickAddsKey);
   }
 
   static Future<void> saveLocalAvatar(String path) async {

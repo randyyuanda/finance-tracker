@@ -23,7 +23,7 @@ class NotificationService {
     ),
   );
 
-  static Future<void> initialize() async {
+  static Future<void> initialize({bool fromBackground = false}) async {
     if (_initialized) return;
 
     tz.initializeTimeZones();
@@ -44,8 +44,10 @@ class NotificationService {
     final androidImpl = _plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    // Request POST_NOTIFICATIONS permission (Android 13+)
-    await androidImpl?.requestNotificationsPermission();
+    // Request POST_NOTIFICATIONS permission (Android 13+) - SKIP IN BACKGROUND
+    if (!fromBackground) {
+      await androidImpl?.requestNotificationsPermission();
+    }
 
     // Create channels immediately so FCM can show notifications even when the
     // app is killed — Android needs the channel to exist before FCM fires.
