@@ -31,8 +31,9 @@ function PrivateRoute({ children, allowIncomplete = false }) {
   if (!token) return <Navigate to="/login" replace />;
   if (!user) return <Spinner />;
   
-  if (!allowIncomplete && !user.hasPassword) {
-    return <Navigate to="/set-password" replace />;
+  if (!allowIncomplete) {
+    if (!user.hasPassword) return <Navigate to="/set-password" replace />;
+    if (!user.emailVerified) return <Navigate to="/verify-email" replace />;
   }
 
   // Admin users must use the /admin route
@@ -56,7 +57,7 @@ function PublicRoute({ children }) {
 }
 
 import SetPassword from './pages/SetPassword';
-
+import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 
 export default function App() {
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/set-password" element={<PrivateRoute allowIncomplete={true}><SetPassword /></PrivateRoute>} />
+        <Route path="/verify-email" element={<PrivateRoute allowIncomplete={true}><VerifyEmail /></PrivateRoute>} />
 
         {/* Admin */}
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

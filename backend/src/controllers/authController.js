@@ -26,6 +26,15 @@ exports.register = async (req, res) => {
     const user = await prisma.user.create({ data: { name, email, password: hashed, contactIdd, contactNumber } });
     await seedUserDefaults(user.id);
 
+    // Send verification OTP automatically
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60000);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { otpCode: await bcrypt.hash(otp, 10), otpExpires: expires },
+    });
+    await sendOtpEmail(email, otp);
+
     res.status(201).json({ token: generateToken(user.id), user: fmtUser(user) });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -68,12 +77,14 @@ exports.saveFcmToken = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, avatar } = req.body;
-    const userId = req.user._id;
+    const { name, avatar, language, currency } = req.body;
+    const userId = req.user.id || req.user._id;
 
     const data = {};
     if (name && name.trim()) data.name = name.trim();
     if (avatar !== undefined) data.avatar = avatar;
+    if (language) data.language = language;
+    if (currency) data.currency = currency;
 
     const updated = await prisma.user.update({ where: { id: userId }, data });
     res.json(fmtUser(updated));

@@ -16,6 +16,7 @@ class User {
     this.language = 'en',
     this.currency = 'IDR',
     this.hasPassword = true,
+    this.emailVerified = false,
     this.phone,
   });
 
@@ -27,6 +28,7 @@ class User {
         language: j['language'] ?? 'en',
         currency: j['currency'] ?? 'IDR',
         hasPassword: j['hasPassword'] ?? true,
+        emailVerified: j['emailVerified'] ?? false,
         phone: j['phone'],
       );
 
@@ -38,6 +40,7 @@ class User {
     'language': language,
     'currency': currency,
     'hasPassword': hasPassword,
+    'emailVerified': emailVerified,
     'phone': phone,
   };
 }

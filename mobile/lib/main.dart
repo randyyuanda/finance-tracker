@@ -27,6 +27,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/set_password_screen.dart';
+import 'screens/auth/verify_email_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/transactions/add_transaction_screen.dart';
 import 'screens/transactions/quick_add_screen.dart';
@@ -279,17 +280,20 @@ class _AppRootState extends State<_AppRoot> {
       ],
       home: !auth.initialized
           ? const _SplashScreen()
-          : auth.isAuthenticated
-              ? (!auth.user!.hasPassword)
-                  ? const SetPasswordScreen()
-                  : const _DeepLinkHandler(child: HomeScreen())
-              : const LoginScreen(),
+            : auth.isAuthenticated
+                ? (!auth.user!.hasPassword)
+                    ? const SetPasswordScreen()
+                    : (!auth.user!.emailVerified)
+                        ? const VerifyEmailScreen()
+                        : const _DeepLinkHandler(child: HomeScreen())
+                : const LoginScreen(),
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/login':    return slideRoute(const LoginScreen());
           case '/register': return slideRoute(const RegisterScreen());
           case '/forgot_password': return slideRoute(const ForgotPasswordScreen());
           case '/set_password': return fadeRoute(const SetPasswordScreen());
+          case '/verify_email': return fadeRoute(const VerifyEmailScreen());
           case '/home':     return fadeRoute(const HomeScreen());
           case '/add_transaction':
             final type = settings.arguments as String?;

@@ -23,6 +23,7 @@ model User {
   language  String    @default("en")
   currency  String    @default("IDR")
   fcmToken  String?
+  emailVerified Boolean @default(false)
   isDummy   Boolean  @default(false)
   isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())

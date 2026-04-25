@@ -71,7 +71,7 @@ class AuthProvider extends ChangeNotifier {
         'name': name,
         'email': email,
         'password': password,
-        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (phone != null && phone.isNotEmpty) 'contactNumber': phone,
       });
       final token = res.data['token'];
       await Storage.saveToken(token);
@@ -96,10 +96,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateProfile({String? name, String? language, String? currency}) async {
+  Future<bool> updateProfile({String? name, String? avatar, String? language, String? currency}) async {
     try {
       final data = <String, dynamic>{};
       if (name != null) data['name'] = name;
+      if (avatar != null) data['avatar'] = avatar;
       if (language != null) data['language'] = language;
       if (currency != null) data['currency'] = currency;
       
@@ -120,9 +121,9 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final data = <String, dynamic>{'password': password};
-      if (phone != null && phone.isNotEmpty) data['phone'] = phone;
+      if (phone != null && phone.isNotEmpty) data['contactNumber'] = phone;
 
-      final res = await ApiClient.dio.post('/auth/set-password', data: data);
+      final res = await ApiClient.dio.post('/set-password', data: data);
       _user = User.fromJson(res.data['user'] ?? res.data);
       _loading = false;
       notifyListeners();
@@ -161,6 +162,41 @@ class AuthProvider extends ChangeNotifier {
       final token = res.data['token'];
       await Storage.saveToken(token);
       ApiClient.reset();
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyEmail(String otp) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final res = await ApiClient.dio.post('/auth/verify-email', data: {'otp': otp});
+      _user = User.fromJson(res.data['user'] ?? res.data);
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = parseError(e);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resendVerification() async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await ApiClient.dio.post('/auth/resend-verification');
       _loading = false;
       notifyListeners();
       return true;
