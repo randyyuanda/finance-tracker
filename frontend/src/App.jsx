@@ -31,7 +31,7 @@ function PrivateRoute({ children, allowIncomplete = false }) {
   if (!token) return <Navigate to="/login" replace />;
   if (!user) return <Spinner />;
   
-  if (!allowIncomplete && (!user.hasPassword || !user.phone)) {
+  if (!allowIncomplete && !user.hasPassword) {
     return <Navigate to="/set-password" replace />;
   }
 

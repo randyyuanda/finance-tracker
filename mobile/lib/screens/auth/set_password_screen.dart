@@ -28,7 +28,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     
     final auth = context.read<AuthProvider>();
-    final ok = await auth.setPassword(_passCtrl.text, _phoneCtrl.text.trim());
+    final ok = await auth.setPassword(_passCtrl.text, null);
     if (ok && mounted) {
       Navigator.pushReplacementNamed(context, '/home');
     } else if (mounted) {
@@ -45,7 +45,6 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     if (user == null) return const Scaffold();
 
     final needsPassword = !user.hasPassword;
-    final needsPhone = user.phone == null || user.phone!.isEmpty;
     final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
 
     return Scaffold(
@@ -102,7 +101,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                       children: [
                         const Text('Secure your account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 6),
-                        Text('Please provide the following details to continue.', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+                        Text('Please set a password to continue.', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
                         const SizedBox(height: 28),
                         Form(
                           key: _formKey,
@@ -123,18 +122,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                                   validator: (v) => v == null || v.length < 6 ? 'Min 6 chars' : null,
                                 ),
                                 const SizedBox(height: 14),
-                              ],
-                              if (needsPhone) ...[
-                                TextFormField(
-                                  controller: _phoneCtrl,
-                                  keyboardType: TextInputType.phone,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Phone number',
-                                    prefixIcon: Icon(Icons.phone_outlined),
-                                  ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                                ),
-                              ],
+                              // Contact fields removed for now as they are optional
                             ],
                           ),
                         ),

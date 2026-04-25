@@ -280,7 +280,7 @@ class _AppRootState extends State<_AppRoot> {
       home: !auth.initialized
           ? const _SplashScreen()
           : auth.isAuthenticated
-              ? (!auth.user!.hasPassword || auth.user!.phone == null || auth.user!.phone!.isEmpty)
+              ? (!auth.user!.hasPassword)
                   ? const SetPasswordScreen()
                   : const _DeepLinkHandler(child: HomeScreen())
               : const LoginScreen(),

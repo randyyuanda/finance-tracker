@@ -10,20 +10,20 @@ const generateToken = (id) =>
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, contactIdd, contactNumber } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ message: 'Name, email, and password are required' });
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
     
-    if (phone) {
-      const existingPhone = await prisma.user.findUnique({ where: { phone } });
-      if (existingPhone) return res.status(400).json({ message: 'Phone number already registered' });
+    if (contactNumber) {
+      const existingPhone = await prisma.user.findUnique({ where: { contactNumber } });
+      if (existingPhone) return res.status(400).json({ message: 'Contact number already registered' });
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { name, email, password: hashed, phone } });
+    const user = await prisma.user.create({ data: { name, email, password: hashed, contactIdd, contactNumber } });
     await seedUserDefaults(user.id);
 
     res.status(201).json({ token: generateToken(user.id), user: fmtUser(user) });
@@ -93,11 +93,23 @@ exports.googleCallback = async (req, res) => {
 
 exports.setPassword = async (req, res) => {
   try {
-    const { password, phone } = req.body;
-    if (!password) return res.status(400).json({ message: 'Password is required' });
+    const { password, contactIdd, contactNumber } = req.body;
+    
+    const existingUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    
+    if (!existingUser.password && !password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
 
-    const data = { password: await bcrypt.hash(password, 10) };
-    if (phone) data.phone = phone;
+    const data = {};
+    if (password) data.password = await bcrypt.hash(password, 10);
+    if (contactIdd) data.contactIdd = contactIdd;
+    if (contactNumber) data.contactNumber = contactNumber;
+
+    if (contactNumber && contactNumber !== existingUser.contactNumber) {
+      const existingPhone = await prisma.user.findUnique({ where: { contactNumber } });
+      if (existingPhone) return res.status(400).json({ message: 'Contact number already registered' });
+    }
 
     const user = await prisma.user.update({
       where: { id: req.user.id },

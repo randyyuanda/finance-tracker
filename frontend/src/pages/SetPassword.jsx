@@ -37,7 +37,7 @@ export default function SetPassword() {
           </div>
           <Title level={2} style={{ margin: 0, color: '#fff' }}>Complete Profile</Title>
           <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
-            Please set a password and phone number to secure your account.
+            Please set a password to secure your account.
           </Text>
         </Space>
 
@@ -73,15 +73,7 @@ export default function SetPassword() {
             </>
           )}
 
-          {!user?.phone && (
-            <Form.Item name="phone" rules={[{ required: true, message: 'Please enter your phone number' }]}>
-              <Input
-                prefix={<PhoneOutlined style={{ color: 'rgba(255,255,255,0.5)' }} />}
-                placeholder="Phone number"
-                className="auth-input"
-              />
-            </Form.Item>
-          )}
+          {/* Contact fields removed for now as they are optional */}
 
           <Button
             type="primary"

@@ -16,7 +16,8 @@ model User {
   password  String?
   googleId  String?  @unique
   avatar    String?
-  phone     String?   @unique
+  contactIdd    String?
+  contactNumber String?   @unique
   otpCode   String?
   otpExpires DateTime?
   language  String    @default("en")
