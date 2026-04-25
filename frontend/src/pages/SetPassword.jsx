@@ -4,7 +4,7 @@ import { Form, Input, Button, Typography, Space, message } from 'antd';
 import { LockOutlined, PhoneOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchMe } from '../store/slices/authSlice';
-import api from '../lib/api';
+import api from '../api/axios';
 
 const { Title, Text } = Typography;
 

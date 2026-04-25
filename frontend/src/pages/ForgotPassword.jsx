@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Typography, Space, message } from 'antd';
 import { MailOutlined, SafetyCertificateOutlined, LockOutlined } from '@ant-design/icons';
-import api from '../lib/api';
+import api from '../api/axios';
 
 const { Title, Text } = Typography;
 
