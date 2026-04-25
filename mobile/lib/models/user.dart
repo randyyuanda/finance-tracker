@@ -6,6 +6,7 @@ class User {
   final String language;
   final String currency;
   final bool hasPassword;
+  final bool emailVerified;
   final String? phone;
 
   User({

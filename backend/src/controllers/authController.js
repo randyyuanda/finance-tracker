@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const { seedUserDefaults } = require('../config/passport');
 const { fmtUser } = require('../lib/format');
 const { processRecurringTransactions } = require('../services/recurringService');
+const { sendOtpEmail } = require('../services/emailService');
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -50,6 +51,17 @@ exports.login = async (req, res) => {
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+
+    // Send a fresh OTP so unverified users can verify immediately after login
+    if (!user.emailVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 15 * 60000);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { otpCode: await bcrypt.hash(otp, 10), otpExpires: expires },
+      });
+      await sendOtpEmail(user.email, otp);
+    }
 
     // Process recurring transactions
     await processRecurringTransactions(user.id);
@@ -132,8 +144,6 @@ exports.setPassword = async (req, res) => {
   }
 };
 
-const { sendOtpEmail } = require('../services/emailService');
-
 exports.requestOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -187,10 +197,58 @@ exports.resetPassword = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.update({
       where: { id: req.user.id },
-      data: { password: hashed, otpCode: null, otpExpires: null },
+      data: { password: hashed, otpCode: null, otpExpires: null, emailVerified: true },
     });
 
     res.json(fmtUser(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const userId = req.user.id || req.user._id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (!user || !user.otpCode || !user.otpExpires)
+      return res.status(400).json({ message: 'Invalid or expired code' });
+
+    if (user.otpExpires < new Date())
+      return res.status(400).json({ message: 'Verification code has expired' });
+
+    const match = await bcrypt.compare(otp, user.otpCode);
+    if (!match) return res.status(400).json({ message: 'Invalid verification code' });
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true, otpCode: null, otpExpires: null },
+    });
+
+    res.json(fmtUser(updated));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.resendVerificationOtp = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.emailVerified) return res.status(400).json({ message: 'Email already verified' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60000);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { otpCode: await bcrypt.hash(otp, 10), otpExpires: expires },
+    });
+
+    await sendOtpEmail(user.email, otp);
+    res.json({ message: 'Verification code sent to your email' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -123,7 +123,7 @@ class AuthProvider extends ChangeNotifier {
       final data = <String, dynamic>{'password': password};
       if (phone != null && phone.isNotEmpty) data['contactNumber'] = phone;
 
-      final res = await ApiClient.dio.post('/set-password', data: data);
+      final res = await ApiClient.dio.post('/auth/set-password', data: data);
       _user = User.fromJson(res.data['user'] ?? res.data);
       _loading = false;
       notifyListeners();

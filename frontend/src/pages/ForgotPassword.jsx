@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Typography, Space, message } from 'antd';
 import { MailOutlined, SafetyCertificateOutlined, LockOutlined } from '@ant-design/icons';
+import { useDispatch } from 'react-redux';
+import { setToken, fetchMe } from '../store/slices/authSlice';
 import api from '../api/axios';
 
 const { Title, Text } = Typography;
@@ -11,6 +13,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleRequestOtp = async (values) => {
     try {
@@ -30,12 +33,17 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
       const verifyRes = await api.post('/auth/verify-otp', { email, otp: values.otp });
-      // Use the token to reset the password
-      await api.post('/auth/reset-password', { password: values.password }, {
-        headers: { Authorization: `Bearer ${verifyRes.data.token}` }
-      });
+      const token = verifyRes.data.token;
+
+      // Store token so the reset-password request is authenticated
+      localStorage.setItem('token', token);
+      dispatch(setToken(token));
+
+      await api.post('/auth/reset-password', { password: values.password });
+      await dispatch(fetchMe());
+
       message.success('Password reset successfully');
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       message.error(err.response?.data?.message || 'Failed to reset password');
     } finally {

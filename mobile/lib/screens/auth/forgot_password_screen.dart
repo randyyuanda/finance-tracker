@@ -61,7 +61,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password reset successfully'), backgroundColor: kIncomeColor),
       );
-      Navigator.pushReplacementNamed(context, '/login');
+      // Clear the entire navigation stack and go home — user is already logged in
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'Failed to reset password'), backgroundColor: kExpenseColor),
