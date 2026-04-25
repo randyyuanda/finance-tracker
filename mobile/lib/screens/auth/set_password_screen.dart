@@ -122,6 +122,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                                   validator: (v) => v == null || v.length < 6 ? 'Min 6 chars' : null,
                                 ),
                                 const SizedBox(height: 14),
+                              ],
                               // Contact fields removed for now as they are optional
                             ],
                           ),
