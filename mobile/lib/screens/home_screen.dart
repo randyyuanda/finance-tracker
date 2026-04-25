@@ -67,7 +67,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final s = context.l10n;
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: Stack(
+        children: List.generate(_screens.length, (i) => AnimatedOpacity(
+          opacity: i == _currentIndex ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          child: IgnorePointer(
+            ignoring: i != _currentIndex,
+            child: _screens[i],
+          ),
+        )),
+      ),
       floatingActionButton: _GradientFAB(onTap: _openAddTransaction),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(

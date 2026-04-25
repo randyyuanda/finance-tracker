@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           slivers: [
             // ── Header ─────────────────────────────────────────────
             SliverAppBar(
-              expandedHeight: 220,
+              expandedHeight: 240,
               floating: false,
               pinned: true,
               flexibleSpace: FlexibleSpaceBar(
@@ -69,7 +69,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      // kToolbarHeight pushes content below the pinned AppBar toolbar
+                      padding: const EdgeInsets.fromLTRB(20, kToolbarHeight + 8, 20, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
