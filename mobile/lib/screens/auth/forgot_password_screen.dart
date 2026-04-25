@@ -121,7 +121,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: MediaQuery.of(context).size.height - 120 - MediaQuery.of(context).padding.top - kToolbarHeight,
+                    minHeight: MediaQuery.of(context).size.height
+                        - 120
+                        - MediaQuery.of(context).padding.top
+                        - MediaQuery.of(context).padding.bottom
+                        - kToolbarHeight,
                   ),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(28, 32, 28, 32),

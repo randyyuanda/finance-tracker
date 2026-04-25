@@ -84,6 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       '${s.hi}, ${auth.user?.name.split(' ').first ?? ''}!',
                                       style: const TextStyle(
                                           color: Colors.white70, fontSize: 14),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       s.financialOverview,
@@ -91,6 +93,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           color: Colors.white,
                                           fontSize: 17,
                                           fontWeight: FontWeight.w700),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -138,7 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              title: Text(s.dashboardTitle, style: const TextStyle(color: Colors.white)),
+              title: Text(s.dashboardTitle, style: const TextStyle(color: Colors.white), overflow: TextOverflow.ellipsis),
               backgroundColor: kPrimaryColor,
             ),
 

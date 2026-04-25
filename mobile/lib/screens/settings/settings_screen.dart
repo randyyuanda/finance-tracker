@@ -347,7 +347,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
               if (confirmed == true && context.mounted) {
-                context.read<AuthProvider>().logout();
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+                }
               }
             },
           ),
