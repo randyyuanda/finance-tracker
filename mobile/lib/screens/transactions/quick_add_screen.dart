@@ -38,9 +38,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         _amountCtrl.text = NumberFormat('#,###', 'id_ID').format(amt.toInt());
       }
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDefaults();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefaults());
   }
 
   void _loadDefaults() {
@@ -48,20 +46,24 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     final cats = _type == 'income'
         ? context.read<CategoryProvider>().incomeCategories
         : context.read<CategoryProvider>().expenseCategories;
-
     setState(() {
       if (accs.isNotEmpty) _accountId = accs.first.id;
-      if (cats.isNotEmpty) {
-        _categoryId = cats.first.id;
-      } else {
-        _categoryId = null;
-      }
+      if (cats.isNotEmpty) _categoryId = cats.first.id;
     });
+  }
+
+  String get _selectedCurrency {
+    final accs = context.read<AccountProvider>().accounts;
+    if (_accountId == null) return 'IDR';
+    try {
+      return accs.firstWhere((a) => a.id == _accountId).currency;
+    } catch (_) {
+      return accs.isNotEmpty ? accs.first.currency : 'IDR';
+    }
   }
 
   Future<void> _save() async {
     if (_amountCtrl.text.isEmpty || _accountId == null || _categoryId == null) return;
-
     setState(() => _loading = true);
     final rawAmount = double.parse(_amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), ''));
     final ok = await context.read<TransactionProvider>().create({
@@ -79,7 +81,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         await NotificationService.showImmediate(
           id: DateTime.now().hashCode.toString(),
           title: context.l10n.transactionLogged,
-          body: context.l10n.transactionAddedBody(typeLabel, _amountCtrl.text),
+          body: context.l10n.transactionAddedBody(typeLabel, _amountCtrl.text, currency: _selectedCurrency),
         );
         if (Navigator.canPop(context)) {
           Navigator.pop(context, true);
@@ -113,27 +115,25 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor = theme.cardTheme.color ?? (isDark ? const Color(0xFF1E1E2E) : Colors.white);
-    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final cardColor = isDark ? theme.cardTheme.color ?? const Color(0xFF1E1E2E) : Colors.white;
+    final cardBorder = isDark ? Colors.transparent : Colors.grey.shade100;
+    final hintColor = isDark ? Colors.grey.shade600 : Colors.grey.shade400;
+    final labelColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Scaffold(
-      backgroundColor: scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              accentColor.withValues(alpha: isDark ? 0.08 : 0.12),
-              scaffoldBg,
-            ],
+            colors: [accentColor.withValues(alpha: 0.15), theme.scaffoldBackgroundColor],
             stops: const [0.0, 0.4],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
@@ -152,13 +152,13 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.4 : 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          _buildMiniTab('expense', 'Expense', kExpenseColor),
-                          _buildMiniTab('income', 'Income', kIncomeColor),
+                          _buildMiniTab('expense', 'Expense', kExpenseColor, theme),
+                          _buildMiniTab('income', 'Income', kIncomeColor, theme),
                         ],
                       ),
                     ),
@@ -175,12 +175,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
                       const SizedBox(height: 20),
                       Text(
                         'Amount',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                          letterSpacing: 0.5,
-                        ),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: labelColor, letterSpacing: 0.5),
                       ),
                       const SizedBox(height: 8),
                       TextField(
@@ -188,88 +183,69 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
                         autofocus: widget.prefilledAmount == null,
                         keyboardType: TextInputType.number,
                         inputFormatters: [AmountInputFormatter()],
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: accentColor,
-                          letterSpacing: -1,
-                        ),
+                        style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: accentColor, letterSpacing: -1),
                         decoration: InputDecoration(
                           hintText: '0',
-                          prefixText: 'Rp ',
-                          prefixStyle: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: accentColor.withValues(alpha: 0.5),
-                          ),
+                          prefixText: '$_selectedCurrency ',
+                          prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: accentColor.withValues(alpha: 0.5)),
                           border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          hintStyle: TextStyle(color: accentColor.withValues(alpha: 0.15)),
+                          hintStyle: TextStyle(color: accentColor.withValues(alpha: 0.1)),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
 
-                      // Input Card
                       Container(
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: cardColor,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                               blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            )
+                              offset: const Offset(0, 10),
+                            ),
                           ],
+                          border: Border.all(color: cardBorder),
                         ),
                         child: Column(
                           children: [
-                            _DropdownTile(
-                              icon: Icons.category_outlined,
-                              label: 'Category',
+                            DropdownButtonFormField<String>(
                               value: _categoryId,
-                              items: categories
-                                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                                  .toList(),
+                              dropdownColor: cardColor,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                prefixIcon: Icon(Icons.category_outlined, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                              items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                               onChanged: (v) => setState(() => _categoryId = v),
                             ),
-                            Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.3)),
-                            _DropdownTile(
-                              icon: Icons.account_balance_wallet_outlined,
-                              label: 'Account',
+                            Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
+                            DropdownButtonFormField<String>(
                               value: _accountId,
-                              items: accounts
-                                  .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name)))
-                                  .toList(),
+                              dropdownColor: cardColor,
+                              decoration: InputDecoration(
+                                labelText: 'Account',
+                                prefixIcon: Icon(Icons.account_balance_wallet_outlined, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                              items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
                               onChanged: (v) => setState(() => _accountId = v),
                             ),
-                            Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.3)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.notes, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _noteCtrl,
-                                      decoration: InputDecoration(
-                                        hintText: 'Note (optional)',
-                                        border: InputBorder.none,
-                                        enabledBorder: InputBorder.none,
-                                        focusedBorder: InputBorder.none,
-                                        filled: false,
-                                        hintStyle: TextStyle(
-                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
-                                          fontSize: 14,
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
+                            TextField(
+                              controller: _noteCtrl,
+                              decoration: InputDecoration(
+                                labelText: 'Note (optional)',
+                                prefixIcon: Icon(Icons.notes, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
                               ),
                             ),
                           ],
@@ -294,7 +270,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     );
   }
 
-  Widget _buildMiniTab(String val, String label, Color color) {
+  Widget _buildMiniTab(String val, String label, Color color, ThemeData theme) {
     final selected = _type == val;
     return GestureDetector(
       onTap: () {
@@ -311,50 +287,11 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            color: selected ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.5),
             fontWeight: FontWeight.w700,
             fontSize: 12,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DropdownTile<T> extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final T? value;
-  final List<DropdownMenuItem<T>> items;
-  final ValueChanged<T?> onChanged;
-
-  const _DropdownTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: DropdownButtonFormField<T>(
-        value: value,
-        dropdownColor: theme.cardTheme.color,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: theme.colorScheme.onSurface.withValues(alpha: 0.45), size: 20),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          filled: false,
-          contentPadding: const EdgeInsets.symmetric(vertical: 4),
-        ),
-        items: items,
-        onChanged: onChanged,
       ),
     );
   }

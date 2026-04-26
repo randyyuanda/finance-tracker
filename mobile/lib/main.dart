@@ -131,9 +131,11 @@ Future<void> _homeWidgetBackgroundHandler(Uri? uri) async {
       );
 
       // 4. Update the widget balance
-      final balRes = await dio.get('/accounts/balance');
-      final totalBal = balRes.data['totalBalance'] ?? 0;
-      await HomeWidget.saveWidgetData('balance', 'Rp $totalBal');
+      final accRes = await dio.get('/accounts');
+      final accList = accRes.data as List;
+      final firstCurrency = accList.isNotEmpty ? (accList.first['currency'] ?? 'IDR') : 'IDR';
+      final totalBal = accList.fold<double>(0, (s, a) => s + ((a['balance'] as num?)?.toDouble() ?? 0));
+      await HomeWidget.saveWidgetData('balance', '$firstCurrency ${totalBal.toStringAsFixed(0)}');
       await HomeWidget.updateWidget(name: 'BuxBuxWidgetProvider');
     } catch (e) {
       debugPrint('Background Log Error: $e');

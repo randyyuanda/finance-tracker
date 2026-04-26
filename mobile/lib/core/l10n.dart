@@ -110,9 +110,9 @@ class AppL10n {
   String get transactionLogged => _t('Transaction Logged', 'Transaksi Dicatat', '交易已记录');
   String get authRequired => _t('Authentication Required', 'Butuh Autentikasi', '需要身份验证');
   String get authRequiredMsg => _t('Please open BuxBux and log in.', 'Silakan buka BuxBux dan masuk.', '请打开 BuxBux 并登录。');
-  String transactionAddedBody(String type, String amount) => _t(
-        '$type of Rp $amount added.',
-        '$type Rp $amount telah ditambahkan.',
+  String transactionAddedBody(String type, String amount, {String currency = 'IDR'}) => _t(
+        '$type of $currency $amount added.',
+        '$type $currency $amount telah ditambahkan.',
         '已添加 $amount 的 $type。',
       );
 
