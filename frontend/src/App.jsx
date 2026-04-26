@@ -17,6 +17,7 @@ import Goals from './pages/Goals';
 import RecurringTransactions from './pages/RecurringTransactions';
 import TransactionCalendar from './pages/Calendar';
 import Reminders from './pages/Reminders';
+import ExchangeRates from './pages/ExchangeRates';
 import Admin from './pages/Admin';
 
 const Spinner = () => (
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="recurring" element={<RecurringTransactions />} />
           <Route path="calendar" element={<TransactionCalendar />} />
           <Route path="reminders" element={<Reminders />} />
+          <Route path="exchange-rates" element={<ExchangeRates />} />
         </Route>
       </Routes>
     </BrowserRouter>

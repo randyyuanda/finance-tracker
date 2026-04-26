@@ -12,6 +12,7 @@ import '../../models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/transaction_tile.dart';
+import '../currency/exchange_rate_screen.dart';
 import '../goals/goals_screen.dart';
 import '../reminders/reminders_screen.dart';
 import '../reports/reports_screen.dart';
@@ -128,15 +129,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Text(s.totalBalance,
                               style: const TextStyle(color: Colors.white70, fontSize: 13)),
                           const SizedBox(height: 2),
-                          Text(
-                            dash.stats != null
-                                ? formatCurrency(dash.stats!.totalBalance)
-                                : '—',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800),
-                          ),
+                          if (dash.stats == null)
+                            const Text('—', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800))
+                          else if (dash.stats!.balancesByCurrency.length <= 1)
+                            Text(
+                              formatCurrency(dash.stats!.totalBalance,
+                                  currency: dash.stats!.balancesByCurrency.keys.firstOrNull ?? 'IDR'),
+                              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+                            )
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: dash.stats!.balancesByCurrency.entries.map((e) => Text(
+                                formatCurrency(e.value, currency: e.key),
+                                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                              )).toList(),
+                            ),
                         ],
                       ),
                     ),
@@ -241,6 +249,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onTap: () => Navigator.push(
                             context, slideRoute(const ReportsScreen())),
                       ),
+                      _FeatureChip(
+                        icon: Icons.currency_exchange,
+                        label: 'Rates',
+                        color: const Color(0xFFFAAD14),
+                        onTap: () => Navigator.push(
+                            context, slideRoute(const ExchangeRateScreen())),
+                      ),
                     ],
                   ),
                 ),
@@ -309,7 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       fontSize: 13),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
-                              Text(formatCurrency(acc.balance),
+                              Text(formatCurrency(acc.balance, currency: acc.currency),
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,

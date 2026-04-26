@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/formatters.dart';
+import '../../core/input_formatters.dart';
 import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/account_provider.dart';
@@ -31,15 +32,32 @@ class _AccountsScreenState extends State<AccountsScreen> {
     ('investment', Icons.trending_up, 'Invest'),
   ];
 
+  static const _typeLabels = {
+    'cash': 'Cash',
+    'bank': 'Bank',
+    'e-wallet': 'E-Wallet',
+    'investment': 'Investment',
+    'savings': 'Savings',
+  };
+
+  static const _currencies = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR'];
+
+  static String _typeLabel(String type) =>
+      _typeLabels[type] ?? type[0].toUpperCase() + type.substring(1);
+
   static IconData _iconData(String icon) {
     return _iconOptions.firstWhere((e) => e.$1 == icon, orElse: () => _iconOptions.first).$2;
   }
 
   void _showForm({Account? account}) {
+    final _numFmt = NumberFormat('#,###', 'id_ID');
     final nameCtrl = TextEditingController(text: account?.name);
-    final balanceCtrl = TextEditingController(text: account?.balance.toStringAsFixed(0));
+    final balanceCtrl = TextEditingController(
+      text: account != null ? _numFmt.format(account.balance.toInt()) : null,
+    );
     String type = account?.type ?? 'cash';
     String selectedIcon = account?.icon ?? 'wallet';
+    String selectedCurrency = account?.currency ?? 'IDR';
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -64,25 +82,44 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   validator: (v) => v?.isEmpty == true ? 'Enter name' : null,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: type,
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                    DropdownMenuItem(value: 'bank', child: Text('Bank')),
-                    DropdownMenuItem(value: 'e-wallet', child: Text('E-Wallet')),
-                    DropdownMenuItem(value: 'investment', child: Text('Investment')),
-                    DropdownMenuItem(value: 'savings', child: Text('Savings')),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: DropdownButtonFormField<String>(
+                        value: type,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                          DropdownMenuItem(value: 'bank', child: Text('Bank')),
+                          DropdownMenuItem(value: 'e-wallet', child: Text('E-Wallet')),
+                          DropdownMenuItem(value: 'investment', child: Text('Investment')),
+                          DropdownMenuItem(value: 'savings', child: Text('Savings')),
+                        ],
+                        onChanged: (v) => setLocal(() => type = v!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCurrency,
+                        decoration: const InputDecoration(labelText: 'Currency'),
+                        items: _currencies
+                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                            .toList(),
+                        onChanged: (v) => setLocal(() => selectedCurrency = v!),
+                      ),
+                    ),
                   ],
-                  onChanged: (v) => setLocal(() => type = v!),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: balanceCtrl,
                   keyboardType: const TextInputType.numberWithOptions(signed: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^-?\d*'))],
-                  decoration: const InputDecoration(
-                    labelText: 'Balance (IDR)',
+                  inputFormatters: [AmountInputFormatter()],
+                  decoration: InputDecoration(
+                    labelText: 'Balance ($selectedCurrency)',
                     helperText: 'Use negative value for debt/overdraft',
                   ),
                 ),
@@ -120,10 +157,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (!formKey.currentState!.validate()) return;
+                      final rawBalance = balanceCtrl.text.replaceAll(RegExp(r'[^0-9-]'), '');
                       final data = {
                         'name': nameCtrl.text.trim(),
                         'type': type,
-                        'balance': double.tryParse(balanceCtrl.text) ?? 0,
+                        'balance': double.tryParse(rawBalance) ?? 0,
+                        'currency': selectedCurrency,
                         'icon': selectedIcon,
                       };
                       final provider = context.read<AccountProvider>();
@@ -183,12 +222,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
                             child: Icon(_iconData(acc.icon), color: color),
                           ),
                           title: Text(acc.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(acc.type, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          subtitle: Text(
+                            '${_typeLabel(acc.type)} · ${acc.currency}',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(formatCurrency(acc.balance),
-                                  style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+                              Text(
+                                formatCurrency(acc.balance, currency: acc.currency),
+                                style: TextStyle(fontWeight: FontWeight.w700, color: color),
+                              ),
                               PopupMenuButton(
                                 itemBuilder: (_) => [
                                   const PopupMenuItem(value: 'edit', child: Text('Edit')),

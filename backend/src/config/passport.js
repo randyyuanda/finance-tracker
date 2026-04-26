@@ -15,6 +15,7 @@ const DEFAULT_CATEGORIES = [
   { name: 'Entertainment', type: 'expense', color: '#722ed1', icon: 'play-circle' },
   { name: 'Healthcare', type: 'expense', color: '#52c41a', icon: 'medicine-box' },
   { name: 'Education', type: 'expense', color: '#13c2c2', icon: 'read' },
+  { name: 'Investment', type: 'expense', color: '#faad14', icon: 'rise' },
   { name: 'Other Expense', type: 'expense', color: '#8c8c8c', icon: 'minus-circle' },
 ];
 

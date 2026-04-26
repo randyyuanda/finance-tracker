@@ -42,9 +42,16 @@ exports.getDashboard = async (req, res) => {
 
     const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
 
+    const balancesByCurrency = {};
+    accounts.forEach((a) => {
+      const cur = a.currency || 'IDR';
+      balancesByCurrency[cur] = (balancesByCurrency[cur] || 0) + a.balance;
+    });
+
     res.json({
       accounts: accounts.map(fmtAccount),
       totalBalance,
+      balancesByCurrency,
       thisMonth: sumByType(thisMo),
       lastMonth: sumByType(lastMo),
       recentTransactions: recentTransactions.map(fmtTransaction),

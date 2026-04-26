@@ -47,6 +47,7 @@ app.use('/api/recurring', require('./routes/recurring'));
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/cron', require('./routes/cron'));
 
 app.get('/api/health', async (_, res) => {
   try {

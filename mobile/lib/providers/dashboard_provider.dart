@@ -9,12 +9,14 @@ class DashboardStats {
   final double monthlyIncome;
   final double monthlyExpense;
   final double monthlySavings;
+  final Map<String, double> balancesByCurrency;
 
   DashboardStats({
     required this.totalBalance,
     required this.monthlyIncome,
     required this.monthlyExpense,
     required this.monthlySavings,
+    required this.balancesByCurrency,
   });
 }
 
@@ -38,13 +40,18 @@ class DashboardProvider extends ChangeNotifier {
       final res = await ApiClient.dio.get('/dashboard');
       final data = res.data as Map<String, dynamic>;
 
-      // Backend returns: { totalBalance, thisMonth: {income,expense,savings}, accounts, recentTransactions }
       final thisMonth = data['thisMonth'] as Map<String, dynamic>? ?? {};
+      final rawCurrencies = data['balancesByCurrency'] as Map<String, dynamic>? ?? {};
+      final balancesByCurrency = rawCurrencies.map(
+        (k, v) => MapEntry(k, (v as num).toDouble()),
+      );
+
       _stats = DashboardStats(
         totalBalance: (data['totalBalance'] as num?)?.toDouble() ?? 0,
         monthlyIncome: (thisMonth['income'] as num?)?.toDouble() ?? 0,
         monthlyExpense: (thisMonth['expense'] as num?)?.toDouble() ?? 0,
         monthlySavings: (thisMonth['savings'] as num?)?.toDouble() ?? 0,
+        balancesByCurrency: balancesByCurrency,
       );
 
       _accounts = ((data['accounts'] ?? []) as List)

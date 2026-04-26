@@ -55,11 +55,76 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _openAddTransaction() async {
-    await Navigator.push(context, slideRoute(const AddTransactionScreen()));
+  void _showAddMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            _buildMenuItem(
+              icon: Icons.add_circle_outline,
+              color: kIncomeColor,
+              label: context.l10n.income,
+              onTap: () => _navigateToAdd('income'),
+            ),
+            _buildMenuItem(
+              icon: Icons.remove_circle_outline,
+              color: kExpenseColor,
+              label: context.l10n.expense,
+              onTap: () => _navigateToAdd('expense'),
+            ),
+            _buildMenuItem(
+              icon: Icons.swap_horiz,
+              color: Colors.blue,
+              label: 'Transfer',
+              onTap: () => _navigateToTransfer(),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+        child: Icon(icon, color: color),
+      ),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+    );
+  }
+
+  Future<void> _navigateToAdd(String type) async {
+    final ok = await Navigator.pushNamed(context, '/add_transaction', arguments: type);
+    if (ok == true) _refresh();
+  }
+
+  Future<void> _navigateToTransfer() async {
+    final ok = await Navigator.pushNamed(context, '/transfer');
+    if (ok == true) _refresh();
+  }
+
+  void _refresh() {
     if (mounted) {
       context.read<TransactionProvider>().fetchAll();
       context.read<DashboardProvider>().fetch();
+      context.read<AccountProvider>().fetchAll();
     }
   }
 
@@ -78,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         )),
       ),
-      floatingActionButton: _GradientFAB(onTap: _openAddTransaction),
+      floatingActionButton: _GradientFAB(onTap: _showAddMenu),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),

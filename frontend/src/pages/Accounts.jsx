@@ -6,7 +6,7 @@ import {
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, WalletOutlined,
   BankOutlined, CreditCardOutlined, MobileOutlined, SafetyOutlined,
-  DollarOutlined, PayCircleOutlined
+  DollarOutlined, RiseOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAccounts, createAccount, updateAccount, deleteAccount } from '../store/slices/accountSlice';
@@ -20,33 +20,44 @@ const COLORS = ['#1890ff', '#52c41a', '#fa541c', '#faad14', '#722ed1', '#eb2f96'
 const ACCOUNT_ICONS = {
   wallet: WalletOutlined,
   bank: BankOutlined,
-  card: CreditCardOutlined,
+  credit_card: CreditCardOutlined,
   mobile: MobileOutlined,
   savings: SafetyOutlined,
-  dollar: DollarOutlined,
-  pay: PayCircleOutlined,
+  investment: RiseOutlined,
+  money: DollarOutlined,
 };
 
 const ACCOUNT_TYPES = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank', label: 'Bank' },
   { value: 'e-wallet', label: 'E-Wallet' },
-  { value: 'credit-card', label: 'Credit Card' },
+  { value: 'investment', label: 'Investment' },
   { value: 'savings', label: 'Savings' },
 ];
 
-const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
+const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR'];
+
+const fmtCurrency = (n, currency = 'IDR') => {
+  const noDecimal = ['IDR', 'JPY'].includes(currency);
+  return `${currency} ${new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: noDecimal ? 0 : 2,
+    maximumFractionDigits: noDecimal ? 0 : 2,
+  }).format(noDecimal ? Math.round(n) : n)}`;
+};
+
+const typeLabel = (type) => ACCOUNT_TYPES.find((t) => t.value === type)?.label ?? type;
 
 export default function Accounts() {
   const t = useT();
   const dispatch = useDispatch();
   const { list: accounts, loading } = useSelector((s) => s.accounts);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
-  
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const selectedColor = Form.useWatch('color', form);
+  const selectedCurrency = Form.useWatch('currency', form) || 'IDR';
 
   useEffect(() => { dispatch(fetchAccounts()); }, [dispatch]);
 
@@ -59,7 +70,7 @@ export default function Accounts() {
 
   const openEdit = (acc) => {
     setEditing(acc);
-    form.setFieldsValue(acc);
+    form.setFieldsValue({ ...acc, currency: acc.currency || 'IDR' });
     setOpen(true);
   };
 
@@ -89,14 +100,29 @@ export default function Accounts() {
     }
   };
 
-  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+  // Group totals by currency
+  const totals = accounts.reduce((acc, a) => {
+    const cur = a.currency || 'IDR';
+    acc[cur] = (acc[cur] || 0) + a.balance;
+    return acc;
+  }, {});
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <Title level={4} style={{ margin: 0 }}>{t('nav_accounts')}</Title>
-          <Text type="secondary">{t('totalBalance')}: <Text strong style={{ color: primaryColor }}>IDR {fmt(totalBalance)}</Text></Text>
+          <div style={{ marginTop: 4 }}>
+            {Object.entries(totals).length === 0 ? (
+              <Text type="secondary">{t('totalBalance')}: <Text strong>—</Text></Text>
+            ) : (
+              Object.entries(totals).map(([cur, bal]) => (
+                <Text key={cur} type="secondary" style={{ marginRight: 16 }}>
+                  {cur}: <Text strong style={{ color: primaryColor }}>{fmtCurrency(bal, cur)}</Text>
+                </Text>
+              ))
+            )}
+          </div>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} size="large" style={{ borderRadius: 12 }}>
           {t('addAccount')}
@@ -111,6 +137,7 @@ export default function Accounts() {
         <Row gutter={[16, 16]}>
           {accounts.map((acc) => {
             const Icon = ACCOUNT_ICONS[acc.icon] || WalletOutlined;
+            const currency = acc.currency || 'IDR';
             return (
               <Col xs={24} sm={12} lg={6} key={acc._id}>
                 <Card
@@ -118,7 +145,7 @@ export default function Accounts() {
                   style={{ borderTop: `4px solid ${acc.color}`, height: '100%' }}
                   actions={[
                     <EditOutlined key="edit" onClick={() => openEdit(acc)} />,
-                    <Popconfirm key="del" title={t('deleteAccountConfirm')} onConfirm={() => onDelete(acc._id)} okText={t('themeLight') === 'Light' ? 'Yes' : 'Ya'}>
+                    <Popconfirm key="del" title={t('deleteAccountConfirm')} onConfirm={() => onDelete(acc._id)} okText="Yes">
                       <DeleteOutlined style={{ color: '#ff4d4f' }} />
                     </Popconfirm>,
                   ]}
@@ -127,15 +154,18 @@ export default function Accounts() {
                     <Avatar size={48} style={{ background: acc.color + '20', color: acc.color, border: `1px solid ${acc.color}40` }} icon={<Icon />} />
                     <div>
                       <Text strong style={{ display: 'block', fontSize: 15 }}>{acc.name}</Text>
-                      <Tag color={acc.color} style={{ margin: 0, fontSize: 10, textTransform: 'uppercase', borderRadius: 4 }}>
-                        {acc.type.replace('-', ' ')}
-                      </Tag>
+                      <Space size={4}>
+                        <Tag color={acc.color} style={{ margin: 0, fontSize: 10, borderRadius: 4 }}>
+                          {typeLabel(acc.type)}
+                        </Tag>
+                        <Tag style={{ margin: 0, fontSize: 10, borderRadius: 4 }}>{currency}</Tag>
+                      </Space>
                     </div>
                   </div>
                   <div style={{ padding: '4px 0' }}>
                     <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>{t('balance')}</Text>
                     <Text strong style={{ fontSize: 22, color: acc.balance >= 0 ? 'inherit' : '#ff4d4f', letterSpacing: -0.5 }}>
-                      IDR {fmt(acc.balance)}
+                      {fmtCurrency(acc.balance, currency)}
                     </Text>
                   </div>
                 </Card>
@@ -150,49 +180,57 @@ export default function Accounts() {
         open={open}
         onOk={onSubmit}
         onCancel={() => setOpen(false)}
-        okText={editing ? t('saveProfile') : t('nav_accounts').slice(0,-1)} // Hacky but works for now or just t('createSuccess') minus success
+        okText={editing ? t('saveProfile') : t('addAccount')}
         okButtonProps={{ size: 'large', style: { borderRadius: 10 } }}
         cancelButtonProps={{ size: 'large', style: { borderRadius: 10 } }}
         width={480}
+        destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item name="name" label={t('accountName')} rules={[{ required: true }]}>
             <Input size="large" placeholder="e.g. BCA Bank" />
           </Form.Item>
-          
-          <Row gutter={16}>
+
+          <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="type" label={t('type')} rules={[{ required: true }]}>
                 <Select size="large">
-                  {ACCOUNT_TYPES.map((t) => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+                  {ACCOUNT_TYPES.map((tp) => <Option key={tp.value} value={tp.value}>{tp.label}</Option>)}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="icon" label={t('icon')} rules={[{ required: true }]}>
-                <Select size="large" optionLabelProp="label">
-                  {Object.entries(ACCOUNT_ICONS).map(([k, IconComp]) => (
-                    <Option key={k} value={k} label={k.charAt(0).toUpperCase() + k.slice(1)}>
-                      <Space><IconComp /> {k.charAt(0).toUpperCase() + k.slice(1)}</Space>
-                    </Option>
-                  ))}
+              <Form.Item name="currency" label="Currency" rules={[{ required: true }]}>
+                <Select size="large">
+                  {CURRENCIES.map((c) => <Option key={c} value={c}>{c}</Option>)}
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          {!editing && (
-            <Form.Item name="balance" label={t('initialBalance')} initialValue={0}>
-              <InputNumber
-                size="large"
-                style={{ width: '100%' }}
-                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(v) => Number((v || '').replace(/[^\d]/g, '')) || 0}
-                addonBefore="IDR"
-                min={0}
-              />
-            </Form.Item>
-          )}
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="icon" label={t('icon')} rules={[{ required: true }]}>
+                <Select size="large" optionLabelProp="label">
+                  {Object.entries(ACCOUNT_ICONS).map(([k, IconComp]) => (
+                    <Option key={k} value={k} label={k.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}>
+                      <Space><IconComp /> {k.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</Space>
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="balance" label={`${t('initialBalance')} (${selectedCurrency})`} initialValue={0}>
+                <InputNumber
+                  size="large"
+                  style={{ width: '100%' }}
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => Number((v || '').replace(/[^\d.-]/g, '')) || 0}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item name="color" label={t('color')}>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '8px 0' }}>
@@ -215,4 +253,3 @@ export default function Accounts() {
     </div>
   );
 }
-

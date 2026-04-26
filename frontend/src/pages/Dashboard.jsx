@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Skeleton, Empty } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined, WalletOutlined, BankOutlined, MobileOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Skeleton, Empty, Space } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined, WalletOutlined, BankOutlined, MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchDashboard, fetchBalanceHistory } from '../store/slices/dashboardSlice';
@@ -8,7 +8,15 @@ import useT from '../i18n/useT';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-const ACCOUNT_ICONS = { cash: WalletOutlined, bank: BankOutlined, 'e-wallet': MobileOutlined, savings: BankOutlined, 'credit-card': BankOutlined };
+const ACCOUNT_ICONS = { cash: WalletOutlined, bank: BankOutlined, 'e-wallet': MobileOutlined, savings: BankOutlined, 'credit-card': BankOutlined, investment: BankOutlined };
+
+const fmtCurrency = (n, currency = 'IDR') => {
+  const noDecimal = ['IDR', 'JPY'].includes(currency);
+  return `${currency} ${new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: noDecimal ? 0 : 2,
+    maximumFractionDigits: noDecimal ? 0 : 2,
+  }).format(noDecimal ? Math.round(n) : n)}`;
+};
 const fmt = (n) => new Intl.NumberFormat('id-ID').format(Math.round(n));
 const fmtCompact = (n) => new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 
@@ -19,16 +27,14 @@ function TrendBadge({ curr, prev, positiveIsGood, t }) {
   const isUp = diff > 0;
   const isGood = positiveIsGood ? isUp : !isUp;
   const color = isGood ? '#52c41a' : '#ff4d4f';
-  
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, background: color + '15', padding: '2px 8px', borderRadius: 10, width: 'fit-content' }}>
       {isUp ? <ArrowUpOutlined style={{ color, fontSize: 10 }} /> : <ArrowDownOutlined style={{ color, fontSize: 10 }} />}
       <Text style={{ fontSize: 11, color, fontWeight: 600 }}>
         {pct ? `${isUp ? '+' : ''}${pct}%` : (diff > 0 ? '+' : '')}
       </Text>
-      <Text style={{ fontSize: 10, color, opacity: 0.8 }}>
-        {t('vsLastMonth')}
-      </Text>
+      <Text style={{ fontSize: 10, color, opacity: 0.8 }}>{t('vsLastMonth')}</Text>
     </div>
   );
 }
@@ -36,7 +42,7 @@ function TrendBadge({ curr, prev, positiveIsGood, t }) {
 export default function Dashboard() {
   const dispatch = useDispatch();
   const t = useT();
-  const { accounts, totalBalance, thisMonth, lastMonth, recentTransactions, balanceHistory, loading, historyLoading } =
+  const { accounts, totalBalance, balancesByCurrency = {}, thisMonth, lastMonth, recentTransactions, balanceHistory, loading, historyLoading } =
     useSelector((s) => s.dashboard);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
   const themeMode = useSelector((s) => s.settings.themeMode);
@@ -45,6 +51,9 @@ export default function Dashboard() {
     dispatch(fetchDashboard());
     dispatch(fetchBalanceHistory());
   }, [dispatch]);
+
+  const currencyEntries = Object.entries(balancesByCurrency);
+  const isMultiCurrency = currencyEntries.length > 1;
 
   const stats = [
     { key: 'income', title: t('incomeThisMonth'), curr: thisMonth.income, prev: lastMonth.income, positiveIsGood: true, color: '#52c41a' },
@@ -68,52 +77,39 @@ export default function Dashboard() {
         <Col xs={24} lg={8}>
           <Card
             className="stat-card"
-            style={{ 
+            style={{
               height: '100%',
-              background: themeMode === 'dark' 
-                ? `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` 
-                : `linear-gradient(135deg, ${primaryColor}0a, ${primaryColor}15)`, 
+              background: themeMode === 'dark'
+                ? `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`
+                : `linear-gradient(135deg, ${primaryColor}0a, ${primaryColor}15)`,
               border: themeMode === 'dark' ? 'none' : `1px solid ${primaryColor}20`,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
             }}
           >
             {themeMode !== 'dark' && (
-              <div style={{ 
-                position: 'absolute', 
-                top: -20, 
-                right: -20, 
-                width: 120, 
-                height: 120, 
-                background: primaryColor, 
-                filter: 'blur(50px)', 
-                opacity: 0.12, 
-                borderRadius: '50%' 
-              }} />
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, background: primaryColor, filter: 'blur(50px)', opacity: 0.12, borderRadius: '50%' }} />
             )}
-            <Text style={{ 
-              color: themeMode === 'dark' ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)', 
-              display: 'block', 
-              marginBottom: 4, 
-              fontSize: 13,
-              fontWeight: 500 
-            }}>
+            <Text style={{ color: themeMode === 'dark' ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)', display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500 }}>
               {t('totalBalance')}
             </Text>
-            {loading
-              ? <Skeleton.Input active size="large" style={{ width: '80%' }} />
-              : <Title level={2} style={{ 
-                  color: themeMode === 'dark' ? '#fff' : primaryColor, 
-                  margin: 0, 
-                  letterSpacing: -0.5,
-                  fontWeight: 800 
-                }}>
-                  IDR {fmt(totalBalance)}
-                </Title>
-            }
+            {loading ? (
+              <Skeleton.Input active size="large" style={{ width: '80%' }} />
+            ) : isMultiCurrency ? (
+              <div>
+                {currencyEntries.map(([cur, bal]) => (
+                  <Title key={cur} level={3} style={{ color: themeMode === 'dark' ? '#fff' : primaryColor, margin: '2px 0', letterSpacing: -0.5, fontWeight: 800 }}>
+                    {fmtCurrency(bal, cur)}
+                  </Title>
+                ))}
+              </div>
+            ) : (
+              <Title level={2} style={{ color: themeMode === 'dark' ? '#fff' : primaryColor, margin: 0, letterSpacing: -0.5, fontWeight: 800 }}>
+                {currencyEntries.length === 1
+                  ? fmtCurrency(currencyEntries[0][1], currencyEntries[0][0])
+                  : `IDR ${fmt(totalBalance)}`}
+              </Title>
+            )}
           </Card>
         </Col>
 
@@ -124,17 +120,13 @@ export default function Dashboard() {
                 title={<Text type="secondary" style={{ fontSize: 12 }}>{title}</Text>}
                 value={Math.abs(curr)}
                 prefix={<span style={{ fontSize: 12, marginRight: 4, color: 'var(--text-secondary)' }}>IDR</span>}
-                formatter={(v) => <span style={{ fontWeight: 700, color: color }}>{fmt(v)}</span>}
+                formatter={(v) => <span style={{ fontWeight: 700, color }}>{fmt(v)}</span>}
                 loading={loading}
               />
-              {!loading && (
-                <TrendBadge curr={curr} prev={prev} positiveIsGood={positiveIsGood} t={t} />
-              )}
+              {!loading && <TrendBadge curr={curr} prev={prev} positiveIsGood={positiveIsGood} t={t} />}
             </Card>
           </Col>
         ))}
-        
-        <Col xs={24} sm={8} lg={1} style={{ display: 'none' }} /> {/* Spacer if needed */}
       </Row>
 
       {/* Balance History Chart */}
@@ -142,70 +134,57 @@ export default function Dashboard() {
         className="stat-card"
         title={<Text strong>{t('balanceHistory')}</Text>}
         extra={<Tag color="blue">{t('last1Year')}</Tag>}
-        style={{ marginBottom: 24, padding: '4px 0' }}
+        style={{ marginBottom: 24 }}
       >
-        {historyLoading || balanceHistory.length === 0
-          ? <Skeleton active paragraph={{ rows: 6 }} />
-          : (
-            <div style={{ width: '100%', height: 300, marginTop: 16 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={balanceHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.45)' }} 
-                    tickLine={false} 
-                    axisLine={false}
-                    dy={10}
-                  />
-                  <YAxis 
-                    tickFormatter={fmtCompact} 
-                    tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.45)' }} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    width={60} 
-                  />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    formatter={(v) => [<span style={{ fontWeight: 700 }}>IDR {fmt(v)}</span>, t('balance')]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="balance"
-                    stroke={primaryColor}
-                    fill="url(#balGrad)"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: primaryColor, strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        {historyLoading || balanceHistory.length === 0 ? (
+          <Skeleton active paragraph={{ rows: 6 }} />
+        ) : (
+          <div style={{ width: '100%', height: 300, marginTop: 16 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={balanceHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.45)' }} tickLine={false} axisLine={false} dy={10} />
+                <YAxis tickFormatter={fmtCompact} tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.45)' }} tickLine={false} axisLine={false} width={60} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  formatter={(v) => [<span style={{ fontWeight: 700 }}>IDR {fmt(v)}</span>, t('balance')]}
+                />
+                <Area type="monotone" dataKey="balance" stroke={primaryColor} fill="url(#balGrad)" strokeWidth={3}
+                  dot={{ r: 4, fill: primaryColor, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </Card>
 
       <Row gutter={[24, 24]}>
         {/* Account Cards */}
         <Col xs={24} lg={10}>
           <Card title={<Text strong>{t('myAccounts')}</Text>} className="stat-card">
-            {loading ? <Skeleton active /> : accounts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noAccounts')} /> : (
+            {loading ? <Skeleton active /> : accounts.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noAccounts')} />
+            ) : (
               <Row gutter={[12, 12]}>
                 {accounts.map((acc) => {
                   const Icon = ACCOUNT_ICONS[acc.type] || WalletOutlined;
+                  const currency = acc.currency || 'IDR';
                   return (
                     <Col xs={12} key={acc._id}>
-                      <div className="account-card-small" style={{ background: acc.color + '12', border: `1px solid ${acc.color}25`, borderRadius: 16, padding: '16px', height: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ background: acc.color + '12', border: `1px solid ${acc.color}25`, borderRadius: 16, padding: 16, height: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                           <Avatar size={32} style={{ background: acc.color, boxShadow: `0 2px 6px ${acc.color}40` }} icon={<Icon />} />
-                          <Text strong style={{ fontSize: 14 }}>{acc.name}</Text>
+                          <Text strong style={{ fontSize: 13 }}>{acc.name}</Text>
                         </div>
-                        <Text strong style={{ color: acc.color, fontSize: 18, display: 'block' }}>IDR {fmt(acc.balance)}</Text>
+                        <Tag style={{ fontSize: 10, borderRadius: 4, marginBottom: 4 }}>{currency}</Tag>
+                        <Text strong style={{ color: acc.color, fontSize: 16, display: 'block' }}>
+                          {fmtCurrency(acc.balance, currency)}
+                        </Text>
                       </div>
                     </Col>
                   );
@@ -218,45 +197,50 @@ export default function Dashboard() {
         {/* Recent Transactions */}
         <Col xs={24} lg={14}>
           <Card title={<Text strong>{t('recentTransactions')}</Text>} className="stat-card">
-            {loading ? <Skeleton active /> : recentTransactions.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noTransactions')} /> : (
+            {loading ? <Skeleton active /> : recentTransactions.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noTransactions')} />
+            ) : (
               <List
                 itemLayout="horizontal"
                 dataSource={recentTransactions}
-                renderItem={(tx) => (
-                  <List.Item style={{ padding: '12px 0' }}>
-                    <List.Item.Meta
-                      avatar={
-                        <Avatar 
-                          size={40} 
-                          style={{ 
-                            background: tx.categoryId?.color + '20', 
-                            color: tx.categoryId?.color,
-                            fontSize: 16,
-                            fontWeight: 700,
-                            border: `1px solid ${tx.categoryId?.color}40`
-                          }}
-                        >
-                          {tx.categoryId?.name?.[0] || '?'}
-                        </Avatar>
-                      }
-                      title={
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text strong style={{ fontSize: 15 }}>{tx.categoryId?.name}</Text>
-                          <Text strong style={{ color: tx.type === 'income' ? '#52c41a' : '#ff4d4f', fontSize: 16 }}>
-                            {tx.type === 'income' ? '+' : '-'}IDR {fmt(tx.amount)}
-                          </Text>
-                        </div>
-                      }
-                      description={
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
-                          <Tag color={tx.accountId?.color} style={{ margin: 0, borderRadius: 4 }}>{tx.accountId?.name}</Tag>
-                          <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(tx.date).format('DD MMM YYYY')}</Text>
-                          {tx.note && <Text type="secondary" style={{ fontSize: 12 }}>· {tx.note}</Text>}
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
+                renderItem={(tx) => {
+                  const isIncome = tx.type === 'income';
+                  const isTransfer = tx.type === 'transfer';
+                  const amtColor = isIncome ? '#52c41a' : isTransfer ? '#1890ff' : '#ff4d4f';
+                  const amtPrefix = isIncome ? '+' : isTransfer ? '' : '-';
+                  const label = isTransfer
+                    ? `${tx.accountId?.name || ''} → ${tx.toAccountId?.name || ''}`
+                    : tx.categoryId?.name || '—';
+                  const avatarBg = isTransfer ? '#1890ff20' : (tx.categoryId?.color + '20');
+                  const avatarColor = isTransfer ? '#1890ff' : tx.categoryId?.color;
+                  return (
+                    <List.Item style={{ padding: '12px 0' }}>
+                      <List.Item.Meta
+                        avatar={
+                          <Avatar size={40} style={{ background: avatarBg, color: avatarColor, fontSize: 16, fontWeight: 700, border: `1px solid ${avatarColor}40` }}>
+                            {isTransfer ? <SwapOutlined /> : (tx.categoryId?.name?.[0] || '?')}
+                          </Avatar>
+                        }
+                        title={
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text strong style={{ fontSize: 14 }}>{label}</Text>
+                            <Text strong style={{ color: amtColor, fontSize: 15 }}>
+                              {amtPrefix}IDR {fmt(tx.amount)}
+                            </Text>
+                          </div>
+                        }
+                        description={
+                          <Space size={8} style={{ marginTop: 2 }}>
+                            {!isTransfer && <Tag color={tx.accountId?.color} style={{ margin: 0, borderRadius: 4 }}>{tx.accountId?.name}</Tag>}
+                            {isTransfer && <Tag color="blue" style={{ margin: 0, borderRadius: 4 }}>Transfer</Tag>}
+                            <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(tx.date).format('DD MMM YYYY')}</Text>
+                            {tx.note && <Text type="secondary" style={{ fontSize: 12 }}>· {tx.note}</Text>}
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  );
+                }}
               />
             )}
           </Card>
@@ -265,4 +249,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

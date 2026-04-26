@@ -3,7 +3,7 @@ import {
   Table, Button, Modal, Form, Input, Select, InputNumber, DatePicker,
   Typography, Tag, Space, Popconfirm, message, Row, Col,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined, SwapOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTransactions, createTransaction, updateTransaction, deleteTransaction } from '../store/slices/transactionSlice';
 import { fetchAccounts } from '../store/slices/accountSlice';
@@ -58,6 +58,7 @@ export default function Transactions() {
     form.setFieldsValue({
       ...tx,
       accountId: tx.accountId?._id,
+      toAccountId: tx.toAccountId?._id,
       categoryId: tx.categoryId?._id,
       date: dayjs(tx.date),
     });
@@ -68,6 +69,8 @@ export default function Transactions() {
     try {
       const values = await form.validateFields();
       const payload = { ...values, date: values.date.toISOString() };
+      if (payload.type !== 'transfer') delete payload.toAccountId;
+      if (payload.type === 'transfer') delete payload.categoryId;
       if (editing) {
         await dispatch(updateTransaction({ id: editing._id, data: payload })).unwrap();
         message.success(t('transactionUpdated'));
@@ -110,27 +113,34 @@ export default function Transactions() {
       title: t('nav_categories'),
       dataIndex: 'categoryId',
       key: 'category',
-      render: (cat) => cat ? (
-        <Tag color={cat.color} style={{ margin: 0 }}>{cat.name}</Tag>
-      ) : '-',
+      render: (cat, row) => {
+        if (row.type === 'transfer') {
+          const from = row.accountId?.name || '?';
+          const to = row.toAccountId?.name || '?';
+          return <Text type="secondary" style={{ fontSize: 12 }}><SwapOutlined style={{ marginRight: 4 }} />{from} → {to}</Text>;
+        }
+        return cat ? <Tag color={cat.color} style={{ margin: 0 }}>{cat.name}</Tag> : '-';
+      },
     },
     {
       title: t('account'),
       dataIndex: 'accountId',
       key: 'account',
       responsive: ['sm'],
-      render: (acc) => acc ? <Tag color={acc.color} style={{ margin: 0 }}>{acc.name}</Tag> : '-',
+      render: (acc, row) => {
+        if (row.type === 'transfer') return null;
+        return acc ? <Tag color={acc.color} style={{ margin: 0 }}>{acc.name}</Tag> : '-';
+      },
     },
     {
       title: t('type'),
       dataIndex: 'type',
       key: 'type',
       width: 90,
-      render: (v) => (
-        <Tag color={v === 'income' ? 'green' : 'red'}>
-          {v === 'income' ? t('income') : t('expense')}
-        </Tag>
-      ),
+      render: (v) => {
+        if (v === 'transfer') return <Tag color="blue">Transfer</Tag>;
+        return <Tag color={v === 'income' ? 'green' : 'red'}>{v === 'income' ? t('income') : t('expense')}</Tag>;
+      },
     },
     {
       title: t('amount'),
@@ -138,11 +148,11 @@ export default function Transactions() {
       key: 'amount',
       align: 'right',
       width: 140,
-      render: (a, r) => (
-        <Text style={{ color: r.type === 'income' ? '#52c41a' : '#ff4d4f', fontWeight: 600 }}>
-          {r.type === 'income' ? '+' : '-'}IDR {fmt(a)}
-        </Text>
-      ),
+      render: (a, r) => {
+        const color = r.type === 'income' ? '#52c41a' : r.type === 'transfer' ? '#1890ff' : '#ff4d4f';
+        const prefix = r.type === 'income' ? '+' : r.type === 'transfer' ? '' : '-';
+        return <Text style={{ color, fontWeight: 600 }}>{prefix}IDR {fmt(a)}</Text>;
+      },
     },
     {
       title: t('note'),
@@ -185,6 +195,7 @@ export default function Transactions() {
           >
             <Select.Option value="income">{t('income')}</Select.Option>
             <Select.Option value="expense">{t('expense')}</Select.Option>
+            <Select.Option value="transfer">Transfer</Select.Option>
           </Select>
         </Col>
         <Col xs={12} sm={6}>
@@ -250,9 +261,10 @@ export default function Transactions() {
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="type" label={t('type')} rules={[{ required: true }]}>
-                <Select onChange={(v) => { setTxType(v); form.setFieldValue('categoryId', undefined); }}>
+                <Select onChange={(v) => { setTxType(v); form.setFieldValue('categoryId', undefined); form.setFieldValue('toAccountId', undefined); }}>
                   <Select.Option value="income">{t('income')}</Select.Option>
                   <Select.Option value="expense">{t('expense')}</Select.Option>
+                  <Select.Option value="transfer">Transfer</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -262,16 +274,24 @@ export default function Transactions() {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="accountId" label={t('account')} rules={[{ required: true }]}>
+          <Form.Item name="accountId" label={txType === 'transfer' ? 'From Account' : t('account')} rules={[{ required: true }]}>
             <Select placeholder={t('selectAccount')}>
               {accounts.map((a) => <Select.Option key={a._id} value={a._id}>{a.name}</Select.Option>)}
             </Select>
           </Form.Item>
-          <Form.Item name="categoryId" label={t('nav_categories')} rules={[{ required: true }]}>
-            <Select placeholder={t('selectCategory')}>
-              {filteredCategories.map((c) => <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>)}
-            </Select>
-          </Form.Item>
+          {txType === 'transfer' ? (
+            <Form.Item name="toAccountId" label="To Account" rules={[{ required: true }]}>
+              <Select placeholder="Select destination account">
+                {accounts.map((a) => <Select.Option key={a._id} value={a._id}>{a.name}</Select.Option>)}
+              </Select>
+            </Form.Item>
+          ) : (
+            <Form.Item name="categoryId" label={t('nav_categories')} rules={[{ required: true }]}>
+              <Select placeholder={t('selectCategory')}>
+                {filteredCategories.map((c) => <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>)}
+              </Select>
+            </Form.Item>
+          )}
           <Form.Item name="amount" label={t('amountLabel')} rules={[{ required: true }]}>
             <InputNumber
               style={{ width: '100%' }}

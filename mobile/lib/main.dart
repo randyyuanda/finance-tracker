@@ -31,6 +31,7 @@ import 'screens/auth/verify_email_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/transactions/add_transaction_screen.dart';
 import 'screens/transactions/quick_add_screen.dart';
+import 'screens/transactions/transfer_screen.dart';
 
 /// FCM background message handler — must be a top-level function.
 @pragma('vm:entry-point')
@@ -299,8 +300,18 @@ class _AppRootState extends State<_AppRoot> {
             final type = settings.arguments as String?;
             return slideRoute(AddTransactionScreen(initialType: type));
           case '/quick_add':
-            final type = settings.arguments as String? ?? 'expense';
-            return fadeRoute(QuickAddScreen(type: type));
+            final qArgs = settings.arguments;
+            String qType = 'expense';
+            String? qAmount;
+            if (qArgs is String) {
+              qType = qArgs;
+            } else if (qArgs is Map) {
+              qType = qArgs['type'] as String? ?? 'expense';
+              qAmount = qArgs['amount'] as String?;
+            }
+            return fadeRoute(QuickAddScreen(type: qType, prefilledAmount: qAmount));
+          case '/transfer':
+            return slideRoute(const TransferScreen());
           default:          return null;
         }
       },
@@ -346,7 +357,8 @@ class _DeepLinkHandlerState extends State<_DeepLinkHandler> {
   void _handleUri(Uri uri) {
     if (uri.scheme == 'buxbux' && uri.host == 'add') {
       final type = uri.queryParameters['type'] ?? 'expense';
-      Navigator.pushNamed(context, '/quick_add', arguments: type);
+      final amount = uri.queryParameters['amount'];
+      Navigator.pushNamed(context, '/quick_add', arguments: {'type': type, 'amount': amount});
     }
   }
 

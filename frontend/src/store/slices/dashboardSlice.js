@@ -24,6 +24,7 @@ const dashboardSlice = createSlice({
   initialState: {
     accounts: [],
     totalBalance: 0,
+    balancesByCurrency: {},
     thisMonth: { income: 0, expense: 0, savings: 0 },
     lastMonth: { income: 0, expense: 0, savings: 0 },
     recentTransactions: [],

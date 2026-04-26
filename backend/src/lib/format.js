@@ -22,6 +22,10 @@ const fmtTransaction = (tx) => {
     out.categoryId = tx.category ? fmtCategory(tx.category) : tx.categoryId;
     delete out.category;
   }
+  if (tx.toAccount !== undefined) {
+    out.toAccountId = tx.toAccount ? fmtAccount(tx.toAccount) : tx.toAccountId;
+    delete out.toAccount;
+  }
   return out;
 };
 

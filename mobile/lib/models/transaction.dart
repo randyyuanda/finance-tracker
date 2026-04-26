@@ -6,9 +6,11 @@ class Transaction {
   final String type;
   final DateTime date;
   final String? note;
+  final String? toAccountId;
   final String? categoryName;
   final String? categoryColor;
   final String? accountName;
+  final String? toAccountName;
 
   Transaction({
     required this.id,
@@ -18,9 +20,11 @@ class Transaction {
     required this.type,
     required this.date,
     this.note,
+    this.toAccountId,
     this.categoryName,
     this.categoryColor,
     this.accountName,
+    this.toAccountName,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> j) {
@@ -28,11 +32,13 @@ class Transaction {
     // the accountId/categoryId fields instead of a plain string ID.
     final acct = j['accountId'] is Map ? j['accountId'] as Map<String, dynamic> : null;
     final cat  = j['categoryId'] is Map ? j['categoryId'] as Map<String, dynamic> : null;
+    final toAcct = j['toAccountId'] is Map ? j['toAccountId'] as Map<String, dynamic> : null;
 
     return Transaction(
       id: j['id'] ?? '',
       accountId: acct?['id'] ?? (j['accountId'] is String ? j['accountId'] as String : ''),
       categoryId: cat?['id'] ?? (j['categoryId'] is String ? j['categoryId'] as String : ''),
+      toAccountId: toAcct?['id'] ?? (j['toAccountId'] is String ? j['toAccountId'] as String : null),
       amount: (j['amount'] as num?)?.toDouble() ?? 0,
       type: j['type'] ?? 'expense',
       date: DateTime.tryParse(j['date'] ?? '') ?? DateTime.now(),
@@ -40,6 +46,7 @@ class Transaction {
       categoryName: cat?['name'] ?? j['category']?['name'],
       categoryColor: cat?['color'] ?? j['category']?['color'],
       accountName: acct?['name'] ?? j['account']?['name'],
+      toAccountName: toAcct?['name'] ?? j['toAccount']?['name'],
     );
   }
 }

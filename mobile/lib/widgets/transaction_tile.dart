@@ -12,7 +12,8 @@ class TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = transaction.type == 'income';
-    final color = isIncome ? kIncomeColor : kExpenseColor;
+    final isTransfer = transaction.type == 'transfer';
+    final color = isIncome ? kIncomeColor : (isTransfer ? kPrimaryColor : kExpenseColor);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -26,17 +27,21 @@ class TransactionTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+            isTransfer ? Icons.swap_horiz : (isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded),
             color: color,
             size: 20,
           ),
         ),
         title: Text(
-          transaction.categoryName ?? 'Uncategorized',
+          isTransfer
+              ? 'Transfer'
+              : (transaction.categoryName ?? 'Uncategorized'),
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
         subtitle: Text(
-          '${transaction.note ?? transaction.accountName ?? ''} · ${formatDate(transaction.date)}',
+          isTransfer
+              ? '${transaction.accountName ?? ''} → ${transaction.toAccountName ?? ''} · ${formatDate(transaction.date)}'
+              : '${transaction.note ?? transaction.accountName ?? ''} · ${formatDate(transaction.date)}',
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -45,7 +50,7 @@ class TransactionTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${isIncome ? '+' : '-'}${formatCurrency(transaction.amount)}',
+              '${isIncome ? '+' : isTransfer ? '' : '-'}${formatCurrency(transaction.amount)}',
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w700,

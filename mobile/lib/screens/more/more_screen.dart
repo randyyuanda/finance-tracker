@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../accounts/accounts_screen.dart';
+import '../currency/exchange_rate_screen.dart';
 import '../goals/goals_screen.dart';
 import '../recurring/recurring_screen.dart';
 import '../reminders/reminders_screen.dart';
@@ -204,6 +205,12 @@ class _MoreScreenState extends State<MoreScreen> {
                     label: s.reportsExport,
                     color: const Color(0xFF13C2C2),
                     onTap: () => Navigator.push(context, slideRoute(const ReportsScreen())),
+                  ),
+                  _MenuItem(
+                    icon: Icons.currency_exchange,
+                    label: 'Exchange Rates',
+                    color: const Color(0xFFFAAD14),
+                    onTap: () => Navigator.push(context, slideRoute(const ExchangeRateScreen())),
                   ),
                 ]),
                 const SizedBox(height: 12),

@@ -19,6 +19,7 @@ import {
   BellOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
+  DollarCircleOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
@@ -69,6 +70,7 @@ export default function AppLayout() {
     { key: '/goals', icon: <AimOutlined />, label: t('nav_goals') || 'Goals' },
     { key: '/recurring', icon: <SyncOutlined />, label: t('nav_recurring') || 'Recurring' },
     { key: '/reminders', icon: <BellOutlined />, label: 'Reminders' },
+    { key: '/exchange-rates', icon: <DollarCircleOutlined />, label: 'Exchange Rates' },
     { key: '/settings', icon: <SettingOutlined />, label: t('nav_settings') },
   ];
 
