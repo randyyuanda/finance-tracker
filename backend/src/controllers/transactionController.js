@@ -2,8 +2,8 @@ const prisma = require('../lib/prisma');
 const { fmtTransaction } = require('../lib/format');
 
 const TX_INCLUDE = {
-  account: { select: { id: true, name: true, color: true, icon: true } },
-  toAccount: { select: { id: true, name: true, color: true, icon: true } },
+  account: { select: { id: true, name: true, color: true, icon: true, currency: true } },
+  toAccount: { select: { id: true, name: true, color: true, icon: true, currency: true } },
   category: { select: { id: true, name: true, color: true, icon: true } },
 };
 

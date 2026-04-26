@@ -96,11 +96,12 @@ export default function useReminderNotifications() {
         const res = await api.get('/notifications/admin');
         const now = Date.now();
         res.data.forEach((n) => {
-          if (!isDueNow(n, now)) return;
-          // Deduplicate within the current session using id + minute bucket
-          const bucket = `${n.id}_${Math.floor(now / 60000)}`;
-          if (adminNotifiedIds.current.has(bucket)) return;
-          adminNotifiedIds.current.add(bucket);
+          // One-time notifications: backend already marks them read after fetch,
+          // so just show them. Repeating ones still need the timing check.
+          if (n.repeatType !== 'none' && !isDueNow(n, now)) return;
+          // Deduplicate within the current session
+          if (adminNotifiedIds.current.has(n.id)) return;
+          adminNotifiedIds.current.add(n.id);
           fireAdminNotification(n);
         });
       } catch (_) {}

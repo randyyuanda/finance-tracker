@@ -151,7 +151,8 @@ export default function Transactions() {
       render: (a, r) => {
         const color = r.type === 'income' ? '#52c41a' : r.type === 'transfer' ? '#1890ff' : '#ff4d4f';
         const prefix = r.type === 'income' ? '+' : r.type === 'transfer' ? '' : '-';
-        return <Text style={{ color, fontWeight: 600 }}>{prefix}IDR {fmt(a)}</Text>;
+        const currency = r.accountId?.currency || 'IDR';
+        return <Text style={{ color, fontWeight: 600 }}>{prefix}{currency} {fmt(a)}</Text>;
       },
     },
     {

@@ -16,7 +16,8 @@ exports.getDashboard = async (req, res) => {
       prisma.transaction.findMany({
         where: { userId },
         include: {
-          account: { select: { id: true, name: true, color: true, icon: true } },
+          account: { select: { id: true, name: true, color: true, icon: true, currency: true } },
+          toAccount: { select: { id: true, name: true, color: true, icon: true, currency: true } },
           category: { select: { id: true, name: true, color: true, icon: true } },
         },
         orderBy: { date: 'desc' },

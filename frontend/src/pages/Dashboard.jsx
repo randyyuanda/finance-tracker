@@ -225,7 +225,7 @@ export default function Dashboard() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text strong style={{ fontSize: 14 }}>{label}</Text>
                             <Text strong style={{ color: amtColor, fontSize: 15 }}>
-                              {amtPrefix}IDR {fmt(tx.amount)}
+                              {amtPrefix}{tx.accountId?.currency || 'IDR'} {fmt(tx.amount)}
                             </Text>
                           </div>
                         }
