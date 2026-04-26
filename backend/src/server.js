@@ -4,7 +4,6 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 const morgan = require('morgan');
-const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const prisma = require('./lib/prisma');
 const seedAdmin = require('./utils/seedAdmin');
@@ -51,12 +50,35 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/cron', require('./routes/cron'));
 
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customSiteTitle: 'BuxBux API Docs',
-  swaggerOptions: { persistAuthorization: true },
-}));
-
 app.get('/api/docs.json', (_, res) => res.json(swaggerSpec));
+
+app.get('/api/docs', (_, res) => {
+  const specUrl = 'https://fintech-api-randyyuandas-projects.vercel.app/api/docs.json';
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <title>BuxBux API Docs</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+  SwaggerUIBundle({
+    url: '${specUrl}',
+    dom_id: '#swagger-ui',
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+    layout: 'BaseLayout',
+    persistAuthorization: true,
+    deepLinking: true,
+  });
+</script>
+</body>
+</html>`);
+});
 
 app.get('/api/health', async (_, res) => {
   try {
