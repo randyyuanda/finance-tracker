@@ -4,6 +4,8 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 const prisma = require('./lib/prisma');
 const seedAdmin = require('./utils/seedAdmin');
 require('./config/passport');
@@ -48,6 +50,13 @@ app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/cron', require('./routes/cron'));
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'BuxBux API Docs',
+  swaggerOptions: { persistAuthorization: true },
+}));
+
+app.get('/api/docs.json', (_, res) => res.json(swaggerSpec));
 
 app.get('/api/health', async (_, res) => {
   try {
