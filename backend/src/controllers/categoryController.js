@@ -1,8 +1,23 @@
 const prisma = require('../lib/prisma');
 const { fmtCategory } = require('../lib/format');
+const { DEFAULT_CATEGORIES } = require('../config/passport');
 
 exports.getCategories = async (req, res) => {
   try {
+    // Backfill any default categories missing for this user (e.g. Investment expense
+    // added after they registered). Safe to run each time — only creates what's absent.
+    const existing = await prisma.category.findMany({
+      where: { userId: req.user._id, isDefault: true },
+      select: { name: true, type: true },
+    });
+    const existingKeys = new Set(existing.map((c) => `${c.name}|${c.type}`));
+    const missing = DEFAULT_CATEGORIES.filter((d) => !existingKeys.has(`${d.name}|${d.type}`));
+    if (missing.length > 0) {
+      await prisma.category.createMany({
+        data: missing.map((c) => ({ ...c, userId: req.user._id, isDefault: true })),
+      });
+    }
+
     const where = { userId: req.user._id };
     if (req.query.type) where.type = req.query.type;
     const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });

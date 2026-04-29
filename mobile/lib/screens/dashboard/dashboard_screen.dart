@@ -167,7 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.6,
+                    childAspectRatio: 1.3,
                   ),
                   delegate: SliverChildListDelegate([
                     _StatCard(
@@ -175,18 +175,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       value: formatCurrency(dash.stats?.monthlyIncome ?? 0),
                       icon: Icons.arrow_downward_rounded,
                       color: kIncomeColor,
+                      currencyMap: dash.stats?.thisMonthByCurrency.isEmpty == false
+                          ? {for (final e in dash.stats!.thisMonthByCurrency.entries) e.key: e.value['income'] ?? 0}
+                          : null,
                     ),
                     _StatCard(
                       label: s.expense,
                       value: formatCurrency(dash.stats?.monthlyExpense ?? 0),
                       icon: Icons.arrow_upward_rounded,
                       color: kExpenseColor,
+                      currencyMap: dash.stats?.thisMonthByCurrency.isEmpty == false
+                          ? {for (final e in dash.stats!.thisMonthByCurrency.entries) e.key: e.value['expense'] ?? 0}
+                          : null,
                     ),
                     _StatCard(
                       label: s.netSavings,
                       value: formatCurrency(dash.stats?.monthlySavings ?? 0),
                       icon: Icons.savings_outlined,
                       color: kPrimaryColor,
+                      currencyMap: dash.stats?.thisMonthByCurrency.isEmpty == false
+                          ? {for (final e in dash.stats!.thisMonthByCurrency.entries) e.key: e.value['savings'] ?? 0}
+                          : null,
                     ),
                     _StatCard(
                       label: s.accounts,
@@ -433,15 +442,48 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final Map<String, double>? currencyMap;
 
-  const _StatCard(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.currencyMap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Widget valueWidget;
+    if (currencyMap != null && currencyMap!.isNotEmpty) {
+      if (currencyMap!.length == 1) {
+        final e = currencyMap!.entries.first;
+        valueWidget = Text(
+          formatCurrency(e.value, currency: e.key),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      } else {
+        valueWidget = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: currencyMap!.entries.map((e) => Text(
+            formatCurrency(e.value, currency: e.key),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          )).toList(),
+        );
+      }
+    } else {
+      valueWidget = Text(
+        value,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -476,10 +518,7 @@ class _StatCard extends StatelessWidget {
                       color: Colors.grey.shade500,
                       fontWeight: FontWeight.w500)),
               const SizedBox(height: 2),
-              Text(value,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+              valueWidget,
             ],
           ),
         ],

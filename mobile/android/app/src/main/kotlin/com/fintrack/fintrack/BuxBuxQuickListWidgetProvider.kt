@@ -20,43 +20,79 @@ class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    private data class ButtonIds(
+        val container: Int,
+        val label: Int,
+        val sub: Int,
+    )
+
+    private val buttonIdMap = listOf(
+        ButtonIds(R.id.btn_quick_1, R.id.btn_quick_1_label, R.id.btn_quick_1_sub),
+        ButtonIds(R.id.btn_quick_2, R.id.btn_quick_2_label, R.id.btn_quick_2_sub),
+        ButtonIds(R.id.btn_quick_3, R.id.btn_quick_3_label, R.id.btn_quick_3_sub),
+        ButtonIds(R.id.btn_quick_4, R.id.btn_quick_4_label, R.id.btn_quick_4_sub),
+    )
+
     private fun updateWidget(
         context: Context,
         manager: AppWidgetManager,
         widgetId: Int
     ) {
         val views = RemoteViews(context.packageName, R.layout.buxbux_quicklist_widget)
-
         val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
         for (i in 1..4) {
-            val id = when(i) {
-                1 -> R.id.btn_quick_exp_1
-                2 -> R.id.btn_quick_exp_2
-                3 -> R.id.btn_quick_inc_1
-                else -> R.id.btn_quick_inc_2
-            }
+            val ids = buttonIdMap[i - 1]
 
             val type = prefs.getString("q${i}_type", if (i <= 2) "expense" else "income") ?: "expense"
-            val amount = prefs.getFloat("q${i}_amount", if (i % 2 == 1) 10000f else 50000f)
-            val label = prefs.getString("q${i}_label", if (type == "expense") "-${formatK(amount)}" else "+${formatK(amount)}") ?: ""
 
-            views.setTextViewText(id, label)
+            // SharedPreferences may hold String (new), Float, or Long (stale) depending on
+            // which version of home_widget wrote the value — try all three to avoid ClassCastException.
+            val default_amt = if (i % 2 == 1) 10000f else 50000f
+            val amount: Float = try {
+                prefs.getString("q${i}_amount", null)?.toDoubleOrNull()?.toFloat() ?: default_amt
+            } catch (e: ClassCastException) {
+                try {
+                    prefs.getFloat("q${i}_amount", default_amt)
+                } catch (e2: ClassCastException) {
+                    try {
+                        prefs.getLong("q${i}_amount", default_amt.toLong()).toFloat()
+                    } catch (e3: ClassCastException) {
+                        default_amt
+                    }
+                }
+            }
 
-            // Open QuickAddScreen with pre-filled type + amount for popup with notes
+            val label = prefs.getString(
+                "q${i}_label",
+                if (type == "expense") "-${formatAmount(amount)}" else "+${formatAmount(amount)}"
+            ) ?: if (type == "expense") "-${formatAmount(amount)}" else "+${formatAmount(amount)}"
+
+            // Sub-label: category name stored by Flutter, fallback to type name
+            val sub = prefs.getString("q${i}_categoryName", null)
+                ?: if (type == "expense") "Expense" else "Income"
+
+            views.setTextViewText(ids.label, label)
+            views.setTextViewText(ids.sub, sub)
+
+            // Tint the container background based on income / expense type.
+            val bgRes = if (type == "expense") R.drawable.widget_btn_expense_alt
+                        else R.drawable.widget_btn_income_alt
+            views.setInt(ids.container, "setBackgroundResource", bgRes)
+
             val uri = Uri.parse("buxbux://add?type=$type&amount=${amount.toInt()}")
             val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                 context,
                 MainActivity::class.java,
                 uri
             )
-            views.setOnClickPendingIntent(id, pendingIntent)
+            views.setOnClickPendingIntent(ids.container, pendingIntent)
         }
 
         manager.updateAppWidget(widgetId, views)
     }
 
-    private fun formatK(amount: Float): String {
+    private fun formatAmount(amount: Float): String {
         return when {
             amount >= 1_000_000 -> "${(amount / 1_000_000).toInt()}M"
             amount >= 1_000 -> "${(amount / 1_000).toInt()}k"

@@ -11,7 +11,7 @@ exports.getDashboard = async (req, res) => {
     const lastMonthStart = startOfMonth(subMonths(now, 1));
     const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-    const [accounts, recentTransactions, thisMo, lastMo] = await Promise.all([
+    const [accounts, recentTransactions, thisMoTxns, lastMoTxns] = await Promise.all([
       prisma.account.findMany({ where: { userId, isActive: true } }),
       prisma.transaction.findMany({
         where: { userId },
@@ -23,21 +23,33 @@ exports.getDashboard = async (req, res) => {
         orderBy: { date: 'desc' },
         take: 10,
       }),
-      prisma.transaction.groupBy({
-        by: ['type'],
-        where: { userId, date: { gte: thisMonthStart, lte: thisMonthEnd } },
-        _sum: { amount: true },
+      prisma.transaction.findMany({
+        where: { userId, date: { gte: thisMonthStart, lte: thisMonthEnd }, type: { in: ['income', 'expense'] } },
+        select: { type: true, amount: true, account: { select: { currency: true } } },
       }),
-      prisma.transaction.groupBy({
-        by: ['type'],
-        where: { userId, date: { gte: lastMonthStart, lte: lastMonthEnd } },
-        _sum: { amount: true },
+      prisma.transaction.findMany({
+        where: { userId, date: { gte: lastMonthStart, lte: lastMonthEnd }, type: { in: ['income', 'expense'] } },
+        select: { type: true, amount: true, account: { select: { currency: true } } },
       }),
     ]);
 
+    const aggregateByCurrency = (rows) => {
+      const byCur = {};
+      for (const r of rows) {
+        const cur = r.account?.currency || 'IDR';
+        if (!byCur[cur]) byCur[cur] = { income: 0, expense: 0, savings: 0 };
+        if (r.type === 'income') byCur[cur].income += r.amount;
+        else byCur[cur].expense += r.amount;
+      }
+      for (const c of Object.values(byCur)) c.savings = c.income - c.expense;
+      return byCur;
+    };
+
+    const sumAll = (rows, type) => rows.filter((r) => r.type === type).reduce((s, r) => s + r.amount, 0);
+
     const sumByType = (rows) => {
-      const income = rows.find((r) => r.type === 'income')?._sum?.amount || 0;
-      const expense = rows.find((r) => r.type === 'expense')?._sum?.amount || 0;
+      const income = sumAll(rows, 'income');
+      const expense = sumAll(rows, 'expense');
       return { income, expense, savings: income - expense };
     };
 
@@ -53,8 +65,9 @@ exports.getDashboard = async (req, res) => {
       accounts: accounts.map(fmtAccount),
       totalBalance,
       balancesByCurrency,
-      thisMonth: sumByType(thisMo),
-      lastMonth: sumByType(lastMo),
+      thisMonth: sumByType(thisMoTxns),
+      lastMonth: sumByType(lastMoTxns),
+      thisMonthByCurrency: aggregateByCurrency(thisMoTxns),
       recentTransactions: recentTransactions.map(fmtTransaction),
     });
   } catch (err) {

@@ -32,12 +32,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _reload() {
-    context.read<TransactionProvider>().fetchAll(reset: true, limit: 1000);
+    final mm = _selectedMonth.toString().padLeft(2, '0');
+    // day 0 of next month = last day of current month (Dart normalizes it)
+    final lastDay = DateTime(_selectedYear, _selectedMonth + 1, 0);
+    final dd = lastDay.day.toString().padLeft(2, '0');
+    context.read<TransactionProvider>().fetchAll(
+      reset: true,
+      limit: 5000, // large enough to hold a full month for any user
+      startDate: '$_selectedYear-$mm-01',
+      endDate: '$_selectedYear-$mm-$dd',
+    );
   }
 
   List<Transaction> get _filtered {
     return context.read<TransactionProvider>().transactions.where((t) {
-      if (t.date.month != _selectedMonth || t.date.year != _selectedYear) return false;
       if (_selectedAccountId != null && t.accountId != _selectedAccountId) return false;
       if (_selectedType != 'all' && t.type != _selectedType) return false;
       return true;
@@ -46,6 +54,39 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   double get _totalIncome => _filtered.where((t) => t.type == 'income').fold(0, (s, t) => s + t.amount);
   double get _totalExpense => _filtered.where((t) => t.type == 'expense').fold(0, (s, t) => s + t.amount);
+
+  Map<String, double> get _incomeByCurrency {
+    if (_selectedAccountId != null) {
+      final acc = context.read<AccountProvider>().accounts
+          .where((a) => a.id == _selectedAccountId).firstOrNull;
+      return {(acc?.currency ?? 'IDR'): _totalIncome};
+    }
+    final result = <String, double>{};
+    for (final t in _filtered.where((t) => t.type == 'income')) {
+      final cur = t.accountCurrency ?? 'IDR';
+      result[cur] = (result[cur] ?? 0) + t.amount;
+    }
+    return result;
+  }
+
+  Map<String, double> get _expenseByCurrency {
+    if (_selectedAccountId != null) {
+      final acc = context.read<AccountProvider>().accounts
+          .where((a) => a.id == _selectedAccountId).firstOrNull;
+      return {(acc?.currency ?? 'IDR'): _totalExpense};
+    }
+    final result = <String, double>{};
+    for (final t in _filtered.where((t) => t.type == 'expense')) {
+      final cur = t.accountCurrency ?? 'IDR';
+      result[cur] = (result[cur] ?? 0) + t.amount;
+    }
+    return result;
+  }
+
+  Map<String, double> get _savingsByCurrency {
+    final allCurs = {..._incomeByCurrency.keys, ..._expenseByCurrency.keys};
+    return {for (final c in allCurs) c: (_incomeByCurrency[c] ?? 0) - (_expenseByCurrency[c] ?? 0)};
+  }
 
   Map<String, double> get _categoryBreakdown {
     final source = _selectedType == 'income'
@@ -95,6 +136,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (_selectedMonth == 1) { _selectedMonth = 12; _selectedYear--; }
       else { _selectedMonth--; }
     });
+    _reload();
   }
 
   void _nextMonth() {
@@ -104,6 +146,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (_selectedMonth == 12) { _selectedMonth = 1; _selectedYear++; }
       else { _selectedMonth++; }
     });
+    _reload();
   }
 
   @override
@@ -114,6 +157,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final breakdown = _categoryBreakdown;
     final income = _totalIncome;
     final expense = _totalExpense;
+    final incomeByCur = _incomeByCurrency;
+    final expenseByCur = _expenseByCurrency;
+    final savingsByCur = _savingsByCurrency;
+    // Use first currency for single-currency displays (category breakdown, etc.)
+    final currency = incomeByCur.keys.firstOrNull ?? expenseByCur.keys.firstOrNull ?? 'IDR';
 
     final catColors = [
       const Color(0xFF1677FF), const Color(0xFFFF4D4F), const Color(0xFF52C41A),
@@ -211,12 +259,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 // ── Summary cards ──
                 if (_selectedType != 'expense')
                   Row(children: [
-                    Expanded(child: _SummaryCard(label: context.l10n.income, value: income, color: kIncomeColor, icon: Icons.arrow_downward_rounded)),
+                    Expanded(child: _SummaryCard(label: context.l10n.income, value: income, color: kIncomeColor, icon: Icons.arrow_downward_rounded, currency: currency, currencyBreakdown: incomeByCur)),
                     const SizedBox(width: 12),
-                    Expanded(child: _SummaryCard(label: context.l10n.expense, value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded)),
+                    Expanded(child: _SummaryCard(label: context.l10n.expense, value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded, currency: currency, currencyBreakdown: expenseByCur)),
                   ])
                 else
-                  _SummaryCard(label: context.l10n.expense, value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded, wide: true),
+                  _SummaryCard(label: context.l10n.expense, value: expense, color: kExpenseColor, icon: Icons.arrow_upward_rounded, wide: true, currency: currency, currencyBreakdown: expenseByCur),
 
                 if (_selectedType == 'all') ...[
                   const SizedBox(height: 12),
@@ -226,6 +274,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     color: income >= expense ? kIncomeColor : kExpenseColor,
                     icon: Icons.savings_outlined,
                     wide: true,
+                    currency: currency,
+                    currencyBreakdown: savingsByCur,
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -275,7 +325,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                       decoration: BoxDecoration(color: catColors[i % catColors.length], shape: BoxShape.circle)),
                                   const SizedBox(width: 8),
                                   Expanded(child: Text(e.key, style: const TextStyle(fontSize: 13))),
-                                  Text(formatCurrency(e.value), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text(formatCurrency(e.value, currency: currency), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                                 ],
                               ),
                             )),
@@ -352,8 +402,37 @@ class _SummaryCard extends StatelessWidget {
   final Color color;
   final IconData icon;
   final bool wide;
+  final String currency;
+  final Map<String, double>? currencyBreakdown;
 
-  const _SummaryCard({required this.label, required this.value, required this.color, required this.icon, this.wide = false});
+  const _SummaryCard({
+    required this.label, required this.value, required this.color, required this.icon,
+    this.wide = false, this.currency = 'IDR', this.currencyBreakdown,
+  });
+
+  Widget _valueWidget(Color color, bool wide) {
+    final bd = currencyBreakdown;
+    if (bd != null && bd.isNotEmpty) {
+      final fontSize = wide ? 14.0 : 12.0;
+      if (bd.length == 1) {
+        final e = bd.entries.first;
+        return Text(formatCurrency(e.value, currency: e.key),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: fontSize, color: color),
+            maxLines: 1, overflow: TextOverflow.ellipsis);
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: bd.entries.map((e) => Text(
+          formatCurrency(e.value, currency: e.key),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: fontSize - 1, color: color),
+          maxLines: 1, overflow: TextOverflow.ellipsis,
+        )).toList(),
+      );
+    }
+    return Text(formatCurrency(value, currency: currency),
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: wide ? 16.0 : 13.0, color: color),
+        maxLines: 1, overflow: TextOverflow.ellipsis);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,15 +444,16 @@ class _SummaryCard extends StatelessWidget {
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
       ),
       child: wide
-          ? Row(children: [
+          ? Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
               Container(width: 36, height: 36,
                   decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
                   child: Icon(icon, color: color, size: 18)),
               const SizedBox(width: 12),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                Text(formatCurrency(value), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: color)),
-              ]),
+                const SizedBox(height: 2),
+                _valueWidget(color, true),
+              ])),
             ])
           : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(width: 32, height: 32,
@@ -382,9 +462,7 @@ class _SummaryCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
               const SizedBox(height: 2),
-              Text(formatCurrency(value),
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              _valueWidget(color, false),
             ]),
     );
   }
@@ -434,7 +512,7 @@ class _TxRow extends StatelessWidget {
               ]),
             ),
             Text(
-              '${isIncome ? '+' : isTransfer ? '' : '-'}${formatCurrency(t.amount)}',
+              '${isIncome ? '+' : isTransfer ? '' : '-'}${formatCurrency(t.amount, currency: t.accountCurrency)}',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: color),
             ),
           ],

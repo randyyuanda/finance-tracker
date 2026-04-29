@@ -7,7 +7,6 @@ import '../../core/input_formatters.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/quick_add_provider.dart';
-import '../../providers/theme_provider.dart';
 
 class QuickAddSettingsScreen extends StatelessWidget {
   const QuickAddSettingsScreen({super.key});
@@ -97,6 +96,7 @@ class _EditConfigSheetState extends State<_EditConfigSheet> {
   late TextEditingController _noteCtrl;
   String? _accountId;
   String? _accountName;
+  String? _currency;
   String? _categoryId;
   String? _categoryName;
 
@@ -109,6 +109,7 @@ class _EditConfigSheetState extends State<_EditConfigSheet> {
     _noteCtrl = TextEditingController(text: widget.config.note);
     _accountId = widget.config.accountId;
     _accountName = widget.config.accountName;
+    _currency = widget.config.currency;
     _categoryId = widget.config.categoryId;
     _categoryName = widget.config.categoryName;
   }
@@ -118,6 +119,9 @@ class _EditConfigSheetState extends State<_EditConfigSheet> {
     final s = context.l10n;
     final accounts = context.watch<AccountProvider>().accounts;
     final categories = context.watch<CategoryProvider>().categories.where((c) => c.type == _type).toList();
+    final displayCurrency = _currency ?? (_accountId != null
+        ? (accounts.where((a) => a.id == _accountId).firstOrNull?.currency ?? 'IDR')
+        : 'IDR');
 
     return Padding(
       padding: EdgeInsets.only(
@@ -151,18 +155,27 @@ class _EditConfigSheetState extends State<_EditConfigSheet> {
             controller: _amountCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [AmountInputFormatter()],
-            decoration: InputDecoration(labelText: '${s.amount} (${context.read<ThemeProvider>().currency})'),
+            decoration: InputDecoration(
+              labelText: s.amount,
+              prefixText: '$displayCurrency ',
+            ),
           ),
           const SizedBox(height: 12),
 
           DropdownButtonFormField<String>(
             value: _accountId,
             decoration: InputDecoration(labelText: s.account),
-            items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
+            items: accounts.map((a) => DropdownMenuItem(
+              value: a.id,
+              child: Text('${a.name} (${a.currency})'),
+            )).toList(),
             onChanged: (v) {
+              if (v == null) return;
+              final acct = accounts.firstWhere((a) => a.id == v);
               setState(() {
                 _accountId = v;
-                _accountName = accounts.firstWhere((a) => a.id == v).name;
+                _accountName = acct.name;
+                _currency = acct.currency;
               });
             },
           ),
@@ -197,6 +210,7 @@ class _EditConfigSheetState extends State<_EditConfigSheet> {
                 label: _labelCtrl.text.trim().isEmpty ? null : _labelCtrl.text.trim(),
                 accountId: _accountId,
                 accountName: _accountName,
+                currency: _currency,
                 categoryId: _categoryId,
                 categoryName: _categoryName,
                 note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),

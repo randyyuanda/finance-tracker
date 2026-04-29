@@ -41,14 +41,27 @@ class QuickAddProvider extends ChangeNotifier {
       final list = configs;
       for (int i = 0; i < list.length; i++) {
         final c = list[i];
+        final prefix = c.type == 'income' ? '+' : '-';
+        final cur = c.currency ?? '';
+        final amtFmt = _formatAmount(c.amount);
+        final defaultLabel = cur.isNotEmpty ? '$prefix$cur $amtFmt' : '$prefix$amtFmt';
+
         await HomeWidget.saveWidgetData('q${i + 1}_type', c.type);
-        await HomeWidget.saveWidgetData('q${i + 1}_amount', c.amount);
-        await HomeWidget.saveWidgetData('q${i + 1}_label', c.label ?? (c.type == 'income' ? '+ ${c.amount}' : '- ${c.amount}'));
+        // Save as String to avoid Long/Float ClassCastException in the Android widget.
+        await HomeWidget.saveWidgetData('q${i + 1}_amount', c.amount.toString());
+        await HomeWidget.saveWidgetData('q${i + 1}_label', c.label ?? defaultLabel);
+        await HomeWidget.saveWidgetData('q${i + 1}_categoryName', c.categoryName);
         await HomeWidget.saveWidgetData('q${i + 1}_accountId', c.accountId);
         await HomeWidget.saveWidgetData('q${i + 1}_categoryId', c.categoryId);
         await HomeWidget.saveWidgetData('q${i + 1}_note', c.note);
       }
       await HomeWidget.updateWidget(name: 'BuxBuxQuickListWidgetProvider');
     } catch (_) {}
+  }
+
+  static String _formatAmount(double amount) {
+    if (amount >= 1000000) return '${(amount / 1000000).toStringAsFixed(amount % 1000000 == 0 ? 0 : 1)}M';
+    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(amount % 1000 == 0 ? 0 : 1)}k';
+    return amount.toStringAsFixed(amount == amount.toInt() ? 0 : 2);
   }
 }

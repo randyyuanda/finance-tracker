@@ -15,7 +15,7 @@ class TransactionProvider extends ChangeNotifier {
   String? get error => _error;
   bool get hasMore => _transactions.length < _total;
 
-  Future<void> fetchAll({bool reset = true, String? type, String? accountId, int? limit}) async {
+  Future<void> fetchAll({bool reset = true, String? type, String? accountId, int? limit, String? startDate, String? endDate}) async {
     if (reset) {
       _page = 1;
       _transactions = [];
@@ -26,6 +26,8 @@ class TransactionProvider extends ChangeNotifier {
       final params = <String, dynamic>{'page': _page, 'limit': limit ?? _limit};
       if (type != null) params['type'] = type;
       if (accountId != null) params['accountId'] = accountId;
+      if (startDate != null) params['startDate'] = startDate;
+      if (endDate != null) params['endDate'] = endDate;
 
       final res = await ApiClient.dio.get('/transactions', queryParameters: params);
       final data = res.data;

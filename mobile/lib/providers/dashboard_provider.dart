@@ -10,6 +10,8 @@ class DashboardStats {
   final double monthlyExpense;
   final double monthlySavings;
   final Map<String, double> balancesByCurrency;
+  // currency → {income, expense, savings}
+  final Map<String, Map<String, double>> thisMonthByCurrency;
 
   DashboardStats({
     required this.totalBalance,
@@ -17,6 +19,7 @@ class DashboardStats {
     required this.monthlyExpense,
     required this.monthlySavings,
     required this.balancesByCurrency,
+    required this.thisMonthByCurrency,
   });
 }
 
@@ -46,12 +49,23 @@ class DashboardProvider extends ChangeNotifier {
         (k, v) => MapEntry(k, (v as num).toDouble()),
       );
 
+      final rawByC = data['thisMonthByCurrency'] as Map<String, dynamic>? ?? {};
+      final thisMonthByCurrency = rawByC.map((cur, vals) {
+        final v = vals as Map<String, dynamic>;
+        return MapEntry(cur, {
+          'income': (v['income'] as num?)?.toDouble() ?? 0,
+          'expense': (v['expense'] as num?)?.toDouble() ?? 0,
+          'savings': (v['savings'] as num?)?.toDouble() ?? 0,
+        });
+      });
+
       _stats = DashboardStats(
         totalBalance: (data['totalBalance'] as num?)?.toDouble() ?? 0,
         monthlyIncome: (thisMonth['income'] as num?)?.toDouble() ?? 0,
         monthlyExpense: (thisMonth['expense'] as num?)?.toDouble() ?? 0,
         monthlySavings: (thisMonth['savings'] as num?)?.toDouble() ?? 0,
         balancesByCurrency: balancesByCurrency,
+        thisMonthByCurrency: thisMonthByCurrency,
       );
 
       _accounts = ((data['accounts'] ?? []) as List)

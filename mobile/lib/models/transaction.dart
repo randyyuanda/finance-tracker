@@ -10,7 +10,9 @@ class Transaction {
   final String? categoryName;
   final String? categoryColor;
   final String? accountName;
+  final String? accountCurrency;
   final String? toAccountName;
+  final String? toAccountCurrency;
 
   Transaction({
     required this.id,
@@ -24,7 +26,9 @@ class Transaction {
     this.categoryName,
     this.categoryColor,
     this.accountName,
+    this.accountCurrency,
     this.toAccountName,
+    this.toAccountCurrency,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> j) {
@@ -46,7 +50,9 @@ class Transaction {
       categoryName: cat?['name'] ?? j['category']?['name'],
       categoryColor: cat?['color'] ?? j['category']?['color'],
       accountName: acct?['name'] ?? j['account']?['name'],
+      accountCurrency: acct?['currency'] ?? j['account']?['currency'],
       toAccountName: toAcct?['name'] ?? j['toAccount']?['name'],
+      toAccountCurrency: toAcct?['currency'] ?? j['toAccount']?['currency'],
     );
   }
 }

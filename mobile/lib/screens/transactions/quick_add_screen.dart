@@ -27,6 +27,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   String? _categoryId;
   String? _accountId;
   bool _loading = false;
+  bool _defaultsLoaded = false;
 
   @override
   void initState() {
@@ -38,18 +39,44 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         _amountCtrl.text = NumberFormat('#,###', 'id_ID').format(amt.toInt());
       }
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefaults());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Fetch providers if empty (cold-start from home-screen widget).
+      final ap = context.read<AccountProvider>();
+      final cp = context.read<CategoryProvider>();
+      if (ap.accounts.isEmpty) ap.fetchAll();
+      if (cp.categories.isEmpty) cp.fetchAll();
+      _loadDefaults();
+    });
   }
 
+  // Called from didChangeDependencies when providers load after a cold-start,
+  // and from _buildMiniTab when the user switches Income ↔ Expense.
   void _loadDefaults() {
     final accs = context.read<AccountProvider>().accounts;
     final cats = _type == 'income'
         ? context.read<CategoryProvider>().incomeCategories
         : context.read<CategoryProvider>().expenseCategories;
+    if (accs.isEmpty && cats.isEmpty) return;
     setState(() {
-      if (accs.isNotEmpty) _accountId = accs.first.id;
-      if (cats.isNotEmpty) _categoryId = cats.first.id;
+      if (accs.isNotEmpty && _accountId == null) _accountId = accs.first.id;
+      if (cats.isNotEmpty) _categoryId = cats.first.id; // always reset on type switch
+      _defaultsLoaded = true;
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set defaults once providers finish loading (handles widget cold-start race).
+    if (!_defaultsLoaded) {
+      final accs = context.read<AccountProvider>().accounts;
+      final cats = _type == 'income'
+          ? context.read<CategoryProvider>().incomeCategories
+          : context.read<CategoryProvider>().expenseCategories;
+      if (accs.isNotEmpty && _accountId == null) _accountId = accs.first.id;
+      if (cats.isNotEmpty && _categoryId == null) _categoryId = cats.first.id;
+      if (_accountId != null && _categoryId != null) _defaultsLoaded = true;
+    }
   }
 
   String get _selectedCurrency {
@@ -104,8 +131,12 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         : context.watch<CategoryProvider>().expenseCategories;
     final accounts = context.watch<AccountProvider>().accounts;
 
-    if (_categoryId != null && !categories.any((c) => c.id == _categoryId)) {
-      _categoryId = categories.isNotEmpty ? categories.first.id : null;
+    // Keep _categoryId valid when the type changes or categories reload.
+    // Schedule via postFrameCallback to avoid mutating state during build.
+    if (_categoryId != null && categories.isNotEmpty && !categories.any((c) => c.id == _categoryId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _categoryId = categories.first.id);
+      });
     }
 
     final accentColor = _type == 'income' ? kIncomeColor : kExpenseColor;
@@ -274,7 +305,10 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     final selected = _type == val;
     return GestureDetector(
       onTap: () {
-        setState(() => _type = val);
+        setState(() {
+          _type = val;
+          _categoryId = null; // will be re-set by _loadDefaults
+        });
         _loadDefaults();
       },
       child: AnimatedContainer(

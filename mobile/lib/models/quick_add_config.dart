@@ -4,6 +4,7 @@ class QuickAddConfig {
   final double amount;
   final String? accountId;
   final String? accountName;
+  final String? currency; // from the selected account; used in widget label
   final String? categoryId;
   final String? categoryName;
   final String? note;
@@ -15,6 +16,7 @@ class QuickAddConfig {
     required this.amount,
     this.accountId,
     this.accountName,
+    this.currency,
     this.categoryId,
     this.categoryName,
     this.note,
@@ -27,6 +29,7 @@ class QuickAddConfig {
         amount: (j['amount'] as num?)?.toDouble() ?? 0,
         accountId: j['accountId'],
         accountName: j['accountName'],
+        currency: j['currency'],
         categoryId: j['categoryId'],
         categoryName: j['categoryName'],
         note: j['note'],
@@ -39,6 +42,7 @@ class QuickAddConfig {
         'amount': amount,
         'accountId': accountId,
         'accountName': accountName,
+        'currency': currency,
         'categoryId': categoryId,
         'categoryName': categoryName,
         'note': note,
@@ -46,9 +50,9 @@ class QuickAddConfig {
       };
 
   static List<QuickAddConfig> get defaults => [
-        QuickAddConfig(id: 'q1', type: 'expense', amount: 10000, label: '- 10k'),
-        QuickAddConfig(id: 'q2', type: 'expense', amount: 50000, label: '- 50k'),
-        QuickAddConfig(id: 'q3', type: 'income', amount: 10000, label: '+ 10k'),
-        QuickAddConfig(id: 'q4', type: 'income', amount: 50000, label: '+ 50k'),
+        QuickAddConfig(id: 'q1', type: 'expense', amount: 10000, label: '-10k'),
+        QuickAddConfig(id: 'q2', type: 'expense', amount: 50000, label: '-50k'),
+        QuickAddConfig(id: 'q3', type: 'income', amount: 10000, label: '+10k'),
+        QuickAddConfig(id: 'q4', type: 'income', amount: 50000, label: '+50k'),
       ];
 }
