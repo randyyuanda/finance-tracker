@@ -90,7 +90,13 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   }
 
   Future<void> _save() async {
-    if (_amountCtrl.text.isEmpty || _accountId == null || _categoryId == null) return;
+    if (_amountCtrl.text.isEmpty) return;
+    if (_accountId == null || _categoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an account and category')),
+      );
+      return;
+    }
     setState(() => _loading = true);
     final rawAmount = double.parse(_amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), ''));
     final ok = await context.read<TransactionProvider>().create({
@@ -131,8 +137,24 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         : context.watch<CategoryProvider>().expenseCategories;
     final accounts = context.watch<AccountProvider>().accounts;
 
+    // Auto-set defaults once providers load (handles cold-start from widget tap).
+    if (accounts.isNotEmpty && _accountId == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _accountId == null) setState(() => _accountId = accounts.first.id);
+      });
+    }
+    if (categories.isNotEmpty && _categoryId == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _categoryId == null) {
+          setState(() {
+            _categoryId = categories.first.id;
+            _defaultsLoaded = true;
+          });
+        }
+      });
+    }
+
     // Keep _categoryId valid when the type changes or categories reload.
-    // Schedule via postFrameCallback to avoid mutating state during build.
     if (_categoryId != null && categories.isNotEmpty && !categories.any((c) => c.id == _categoryId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _categoryId = categories.first.id);
