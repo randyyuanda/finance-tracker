@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Skeleton, Empty, Space } from 'antd';
+import { useEffect, useState } from 'react';
+import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Skeleton, Empty, Space, Pagination } from 'antd';
 import { ArrowUpOutlined, ArrowDownOutlined, WalletOutlined, BankOutlined, MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -39,27 +39,39 @@ function TrendBadge({ curr, prev, positiveIsGood, t }) {
   );
 }
 
+const TX_PAGE_SIZE = 5;
+
 export default function Dashboard() {
   const dispatch = useDispatch();
   const t = useT();
-  const { accounts, totalBalance, balancesByCurrency = {}, thisMonth, lastMonth, recentTransactions, balanceHistory, loading, historyLoading } =
+  const { accounts, totalBalance, balancesByCurrency = {}, thisMonth, lastMonth, thisMonthByCurrency = {}, recentTransactions, balanceHistory, loading, historyLoading } =
     useSelector((s) => s.dashboard);
   const primaryColor = useSelector((s) => s.settings.primaryColor);
   const themeMode = useSelector((s) => s.settings.themeMode);
+  const [txPage, setTxPage] = useState(1);
 
   useEffect(() => {
     dispatch(fetchDashboard());
     dispatch(fetchBalanceHistory());
   }, [dispatch]);
 
+  // Reset page when transactions change
+  useEffect(() => { setTxPage(1); }, [recentTransactions]);
+
   const currencyEntries = Object.entries(balancesByCurrency);
   const isMultiCurrency = currencyEntries.length > 1;
+
+  const statCurrencies = Object.keys(thisMonthByCurrency);
+  const isMultiCurrencyStats = statCurrencies.length > 1;
+  const singleStatCurrency = statCurrencies.length === 1 ? statCurrencies[0] : (currencyEntries.length === 1 ? currencyEntries[0][0] : 'IDR');
 
   const stats = [
     { key: 'income', title: t('incomeThisMonth'), curr: thisMonth.income, prev: lastMonth.income, positiveIsGood: true, color: '#52c41a' },
     { key: 'expense', title: t('expenseThisMonth'), curr: thisMonth.expense, prev: lastMonth.expense, positiveIsGood: false, color: '#ff4d4f' },
     { key: 'savings', title: t('savingsThisMonth'), curr: thisMonth.savings, prev: lastMonth.savings, positiveIsGood: true, color: '#1890ff' },
   ];
+
+  const pagedTx = recentTransactions.slice((txPage - 1) * TX_PAGE_SIZE, txPage * TX_PAGE_SIZE);
 
   return (
     <div className="page-container">
@@ -73,8 +85,8 @@ export default function Dashboard() {
       </Row>
 
       {/* Main Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} lg={8}>
+      <Row gutter={[16, 16]} align="stretch" style={{ marginBottom: 16 }}>
+        <Col xs={24} lg={9}>
           <Card
             className="stat-card"
             style={{
@@ -116,13 +128,28 @@ export default function Dashboard() {
         {stats.map(({ key, title, curr, prev, positiveIsGood, color }) => (
           <Col xs={24} sm={8} lg={5} key={key}>
             <Card className="stat-card" style={{ height: '100%' }}>
-              <Statistic
-                title={<Text type="secondary" style={{ fontSize: 12 }}>{title}</Text>}
-                value={Math.abs(curr)}
-                prefix={<span style={{ fontSize: 12, marginRight: 4, color: 'var(--text-secondary)' }}>IDR</span>}
-                formatter={(v) => <span style={{ fontWeight: 700, color }}>{fmt(v)}</span>}
-                loading={loading}
-              />
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>{title}</Text>
+              {loading ? (
+                <Skeleton.Input active size="small" style={{ width: '80%', marginBottom: 4 }} />
+              ) : isMultiCurrencyStats ? (
+                <div style={{ marginBottom: 4 }}>
+                  {statCurrencies.map((cur) => {
+                    const val = thisMonthByCurrency[cur]?.[key] ?? 0;
+                    return (
+                      <Text key={cur} strong style={{ color, display: 'block', fontSize: 14 }}>
+                        {fmtCurrency(Math.abs(val), cur)}
+                      </Text>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Statistic
+                  value={Math.abs(curr)}
+                  prefix={<span style={{ fontSize: 12, marginRight: 4, color: 'var(--text-secondary)' }}>{singleStatCurrency}</span>}
+                  formatter={(v) => <span style={{ fontWeight: 700, color }}>{fmt(v)}</span>}
+                  loading={loading}
+                />
+              )}
               {!loading && <TrendBadge curr={curr} prev={prev} positiveIsGood={positiveIsGood} t={t} />}
             </Card>
           </Col>
@@ -153,7 +180,7 @@ export default function Dashboard() {
                 <YAxis tickFormatter={fmtCompact} tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.45)' }} tickLine={false} axisLine={false} width={60} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  formatter={(v) => [<span style={{ fontWeight: 700 }}>IDR {fmt(v)}</span>, t('balance')]}
+                  formatter={(v) => [<span style={{ fontWeight: 700 }}>{fmt(v)}</span>, t('balance')]}
                 />
                 <Area type="monotone" dataKey="balance" stroke={primaryColor} fill="url(#balGrad)" strokeWidth={3}
                   dot={{ r: 4, fill: primaryColor, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
@@ -166,7 +193,7 @@ export default function Dashboard() {
       <Row gutter={[24, 24]}>
         {/* Account Cards */}
         <Col xs={24} lg={10}>
-          <Card title={<Text strong>{t('myAccounts')}</Text>} className="stat-card">
+          <Card title={<Text strong>{t('myAccounts')}</Text>} className="stat-card" style={{ height: '100%' }}>
             {loading ? <Skeleton active /> : accounts.length === 0 ? (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noAccounts')} />
             ) : (
@@ -196,52 +223,81 @@ export default function Dashboard() {
 
         {/* Recent Transactions */}
         <Col xs={24} lg={14}>
-          <Card title={<Text strong>{t('recentTransactions')}</Text>} className="stat-card">
+          <Card
+            title={<Text strong>{t('recentTransactions')}</Text>}
+            className="stat-card"
+            style={{ height: '100%' }}
+            extra={
+              recentTransactions.length > TX_PAGE_SIZE && (
+                <Pagination
+                  simple
+                  size="small"
+                  current={txPage}
+                  pageSize={TX_PAGE_SIZE}
+                  total={recentTransactions.length}
+                  onChange={setTxPage}
+                />
+              )
+            }
+          >
             {loading ? <Skeleton active /> : recentTransactions.length === 0 ? (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noTransactions')} />
             ) : (
-              <List
-                itemLayout="horizontal"
-                dataSource={recentTransactions}
-                renderItem={(tx) => {
-                  const isIncome = tx.type === 'income';
-                  const isTransfer = tx.type === 'transfer';
-                  const amtColor = isIncome ? '#52c41a' : isTransfer ? '#1890ff' : '#ff4d4f';
-                  const amtPrefix = isIncome ? '+' : isTransfer ? '' : '-';
-                  const label = isTransfer
-                    ? `${tx.accountId?.name || ''} → ${tx.toAccountId?.name || ''}`
-                    : tx.categoryId?.name || '—';
-                  const avatarBg = isTransfer ? '#1890ff20' : (tx.categoryId?.color + '20');
-                  const avatarColor = isTransfer ? '#1890ff' : tx.categoryId?.color;
-                  return (
-                    <List.Item style={{ padding: '12px 0' }}>
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar size={40} style={{ background: avatarBg, color: avatarColor, fontSize: 16, fontWeight: 700, border: `1px solid ${avatarColor}40` }}>
-                            {isTransfer ? <SwapOutlined /> : (tx.categoryId?.name?.[0] || '?')}
-                          </Avatar>
-                        }
-                        title={
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text strong style={{ fontSize: 14 }}>{label}</Text>
-                            <Text strong style={{ color: amtColor, fontSize: 15 }}>
-                              {amtPrefix}{tx.accountId?.currency || 'IDR'} {fmt(tx.amount)}
-                            </Text>
-                          </div>
-                        }
-                        description={
-                          <Space size={8} style={{ marginTop: 2 }}>
-                            {!isTransfer && <Tag color={tx.accountId?.color} style={{ margin: 0, borderRadius: 4 }}>{tx.accountId?.name}</Tag>}
-                            {isTransfer && <Tag color="blue" style={{ margin: 0, borderRadius: 4 }}>Transfer</Tag>}
-                            <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(tx.date).format('DD MMM YYYY')}</Text>
-                            {tx.note && <Text type="secondary" style={{ fontSize: 12 }}>· {tx.note}</Text>}
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  );
-                }}
-              />
+              <>
+                <List
+                  itemLayout="horizontal"
+                  dataSource={pagedTx}
+                  renderItem={(tx) => {
+                    const isIncome = tx.type === 'income';
+                    const isTransfer = tx.type === 'transfer';
+                    const amtColor = isIncome ? '#52c41a' : isTransfer ? '#1890ff' : '#ff4d4f';
+                    const amtPrefix = isIncome ? '+' : isTransfer ? '' : '-';
+                    const label = isTransfer
+                      ? `${tx.accountId?.name || ''} → ${tx.toAccountId?.name || ''}`
+                      : tx.categoryId?.name || '—';
+                    const avatarBg = isTransfer ? '#1890ff20' : (tx.categoryId?.color + '20');
+                    const avatarColor = isTransfer ? '#1890ff' : tx.categoryId?.color;
+                    return (
+                      <List.Item style={{ padding: '12px 0' }}>
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar size={40} style={{ background: avatarBg, color: avatarColor, fontSize: 16, fontWeight: 700, border: `1px solid ${avatarColor}40` }}>
+                              {isTransfer ? <SwapOutlined /> : (tx.categoryId?.name?.[0] || '?')}
+                            </Avatar>
+                          }
+                          title={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text strong style={{ fontSize: 14 }}>{label}</Text>
+                              <Text strong style={{ color: amtColor, fontSize: 15 }}>
+                                {amtPrefix}{fmtCurrency(tx.amount, tx.accountId?.currency || 'IDR')}
+                              </Text>
+                            </div>
+                          }
+                          description={
+                            <Space size={8} style={{ marginTop: 2 }}>
+                              {!isTransfer && <Tag color={tx.accountId?.color} style={{ margin: 0, borderRadius: 4 }}>{tx.accountId?.name}</Tag>}
+                              {isTransfer && <Tag color="blue" style={{ margin: 0, borderRadius: 4 }}>Transfer</Tag>}
+                              <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(tx.date).format('DD MMM YYYY')}</Text>
+                              {tx.note && <Text type="secondary" style={{ fontSize: 12 }}>· {tx.note}</Text>}
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    );
+                  }}
+                />
+                {recentTransactions.length > TX_PAGE_SIZE && (
+                  <div style={{ textAlign: 'center', marginTop: 12 }}>
+                    <Pagination
+                      current={txPage}
+                      pageSize={TX_PAGE_SIZE}
+                      total={recentTransactions.length}
+                      onChange={setTxPage}
+                      size="small"
+                    />
+                  </div>
+                )}
+              </>
             )}
           </Card>
         </Col>

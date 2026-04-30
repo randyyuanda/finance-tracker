@@ -49,6 +49,7 @@ app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/cron', require('./routes/cron'));
+app.use('/api/quickadd', require('./routes/quickadd'));
 
 app.get('/api/docs.json', (_, res) => res.json(swaggerSpec));
 

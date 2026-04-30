@@ -27,6 +27,7 @@ const dashboardSlice = createSlice({
     balancesByCurrency: {},
     thisMonth: { income: 0, expense: 0, savings: 0 },
     lastMonth: { income: 0, expense: 0, savings: 0 },
+    thisMonthByCurrency: {},
     recentTransactions: [],
     balanceHistory: [],
     loading: false,

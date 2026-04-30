@@ -5,7 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 
 class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
 
@@ -68,24 +68,27 @@ class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
                 if (type == "expense") "-${formatAmount(amount)}" else "+${formatAmount(amount)}"
             ) ?: if (type == "expense") "-${formatAmount(amount)}" else "+${formatAmount(amount)}"
 
-            // Sub-label: category name stored by Flutter, fallback to type name
             val sub = prefs.getString("q${i}_categoryName", null)
                 ?: if (type == "expense") "Expense" else "Income"
 
             views.setTextViewText(ids.label, label)
             views.setTextViewText(ids.sub, sub)
 
-            // Tint the container background based on income / expense type.
             val bgRes = if (type == "expense") R.drawable.widget_btn_expense_alt
                         else R.drawable.widget_btn_income_alt
             views.setInt(ids.container, "setBackgroundResource", bgRes)
 
-            val uri = Uri.parse("buxbux://add?type=$type&amount=${amount.toInt()}")
-            val pendingIntent = HomeWidgetLaunchIntent.getActivity(
-                context,
-                MainActivity::class.java,
-                uri
+            // Use background intent so transactions are posted without opening the app.
+            val accountId = prefs.getString("q${i}_accountId", "") ?: ""
+            val categoryId = prefs.getString("q${i}_categoryId", "") ?: ""
+            val note = prefs.getString("q${i}_note", "") ?: ""
+            val uri = Uri.parse(
+                "buxbux://quickadd?type=$type&amount=${amount.toInt()}" +
+                "&accountId=${Uri.encode(accountId)}" +
+                "&categoryId=${Uri.encode(categoryId)}" +
+                "&note=${Uri.encode(note)}"
             )
+            val pendingIntent = HomeWidgetBackgroundIntent.getBroadcast(context, uri)
             views.setOnClickPendingIntent(ids.container, pendingIntent)
         }
 

@@ -281,6 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _IncomeExpenseChart(
                       income: dash.stats!.monthlyIncome,
                       expense: dash.stats!.monthlyExpense,
+                      byCurrency: dash.stats!.thisMonthByCurrency,
                     ),
                   ),
                 ),
@@ -532,12 +533,20 @@ class _StatCard extends StatelessWidget {
 class _IncomeExpenseChart extends StatelessWidget {
   final double income;
   final double expense;
+  final Map<String, Map<String, double>> byCurrency;
 
-  const _IncomeExpenseChart({required this.income, required this.expense});
+  const _IncomeExpenseChart({
+    required this.income,
+    required this.expense,
+    this.byCurrency = const {},
+  });
 
   @override
   Widget build(BuildContext context) {
     final total = income + expense;
+    final currencies = byCurrency.keys.toList();
+    final isMulti = currencies.length > 1;
+    final primaryCurrency = currencies.firstOrNull ?? 'IDR';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -551,51 +560,113 @@ class _IncomeExpenseChart extends StatelessWidget {
               offset: const Offset(0, 2)),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 130,
-            width: 130,
-            child: PieChart(
-              PieChartData(
-                sections: [
-                  PieChartSectionData(value: income, color: kIncomeColor, title: '', radius: 40),
-                  PieChartSectionData(value: expense, color: kExpenseColor, title: '', radius: 40),
-                ],
-                sectionsSpace: 3,
-                centerSpaceRadius: 30,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 130,
+                width: 130,
+                child: PieChart(
+                  PieChartData(
+                    sections: [
+                      PieChartSectionData(value: income, color: kIncomeColor, title: '', radius: 40),
+                      PieChartSectionData(value: expense, color: kExpenseColor, title: '', radius: 40),
+                    ],
+                    sectionsSpace: 3,
+                    centerSpaceRadius: 30,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: isMulti
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(children: [
+                            Container(width: 10, height: 10, decoration: const BoxDecoration(color: kIncomeColor, shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            Text(context.l10n.income, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          ]),
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            Container(width: 10, height: 10, decoration: const BoxDecoration(color: kExpenseColor, shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            Text(context.l10n.expense, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          ]),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _LegendRow(
+                              color: kIncomeColor,
+                              label: context.l10n.income,
+                              value: formatCurrency(income, currency: primaryCurrency),
+                              pct: total > 0 ? (income / total * 100).round() : 0),
+                          const SizedBox(height: 12),
+                          _LegendRow(
+                              color: kExpenseColor,
+                              label: context.l10n.expense,
+                              value: formatCurrency(expense, currency: primaryCurrency),
+                              pct: total > 0 ? (expense / total * 100).round() : 0),
+                          const SizedBox(height: 12),
+                          Divider(height: 1, color: Colors.grey.shade200),
+                          const SizedBox(height: 12),
+                          Text('Net: ${formatCurrency(income - expense, currency: primaryCurrency)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: income >= expense ? kIncomeColor : kExpenseColor,
+                              )),
+                        ],
+                      ),
+              ),
+            ],
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _LegendRow(
-                    color: kIncomeColor,
-                    label: context.l10n.income,
-                    value: formatCurrency(income),
-                    pct: total > 0 ? (income / total * 100).round() : 0),
-                const SizedBox(height: 12),
-                _LegendRow(
-                    color: kExpenseColor,
-                    label: context.l10n.expense,
-                    value: formatCurrency(expense),
-                    pct: total > 0 ? (expense / total * 100).round() : 0),
-                const SizedBox(height: 12),
-                Divider(height: 1, color: Colors.grey.shade200),
-                const SizedBox(height: 12),
-                Text('Net: ${formatCurrency(income - expense)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: income >= expense ? kIncomeColor : kExpenseColor,
-                    )),
-              ],
-            ),
-          ),
+          if (isMulti) ...[
+            const SizedBox(height: 12),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 8),
+            ...byCurrency.entries.map((e) {
+              final cur = e.key;
+              final inc = e.value['income'] ?? 0.0;
+              final exp = e.value['expense'] ?? 0.0;
+              final net = inc - exp;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(cur, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                    Row(children: [
+                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: kIncomeColor, shape: BoxShape.circle)),
+                      const SizedBox(width: 4),
+                      Text(formatCurrency(inc, currency: cur), style: const TextStyle(fontSize: 11)),
+                      const SizedBox(width: 10),
+                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: kExpenseColor, shape: BoxShape.circle)),
+                      const SizedBox(width: 4),
+                      Text(formatCurrency(exp, currency: cur), style: const TextStyle(fontSize: 11)),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Net: ${formatCurrency(net, currency: cur)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: net >= 0 ? kIncomeColor : kExpenseColor,
+                        ),
+                      ),
+                    ]),
+                  ],
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -663,17 +734,24 @@ class _SpendingBarChart extends StatelessWidget {
         List.generate(7, (i) => DateTime(now.year, now.month, now.day - (6 - i)));
     final incomeByDay = <int, double>{};
     final expenseByDay = <int, double>{};
+    final incomeByCurrency = <String, double>{};
+    final expenseByCurrency = <String, double>{};
 
     for (final t in transactions) {
       final d = DateTime(t.date.year, t.date.month, t.date.day);
       final idx = days.indexWhere((day) => day.isAtSameMomentAs(d));
-      if (idx == -1) continue;
+      final cur = t.accountCurrency ?? 'IDR';
       if (t.type == 'income') {
-        incomeByDay[idx] = (incomeByDay[idx] ?? 0) + t.amount;
-      } else {
-        expenseByDay[idx] = (expenseByDay[idx] ?? 0) + t.amount;
+        if (idx != -1) incomeByDay[idx] = (incomeByDay[idx] ?? 0) + t.amount;
+        incomeByCurrency[cur] = (incomeByCurrency[cur] ?? 0) + t.amount;
+      } else if (t.type == 'expense') {
+        if (idx != -1) expenseByDay[idx] = (expenseByDay[idx] ?? 0) + t.amount;
+        expenseByCurrency[cur] = (expenseByCurrency[cur] ?? 0) + t.amount;
       }
     }
+
+    final allCurrencies = {...incomeByCurrency.keys, ...expenseByCurrency.keys}.toList();
+    final isMultiCurrency = allCurrencies.length > 1;
 
     final maxY = [
       ...incomeByDay.values,
@@ -782,6 +860,33 @@ class _SpendingBarChart extends StatelessWidget {
               ),
             ),
           ),
+          if (isMultiCurrency) ...[
+            const SizedBox(height: 8),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 8),
+            ...allCurrencies.map((cur) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(cur, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                  Row(children: [
+                    if (incomeByCurrency.containsKey(cur)) ...[
+                      _dot(kIncomeColor),
+                      const SizedBox(width: 4),
+                      Text(formatCurrency(incomeByCurrency[cur]!, currency: cur), style: const TextStyle(fontSize: 10)),
+                      const SizedBox(width: 8),
+                    ],
+                    if (expenseByCurrency.containsKey(cur)) ...[
+                      _dot(kExpenseColor),
+                      const SizedBox(width: 4),
+                      Text(formatCurrency(expenseByCurrency[cur]!, currency: cur), style: const TextStyle(fontSize: 10)),
+                    ],
+                  ]),
+                ],
+              ),
+            )),
+          ],
         ],
       ),
     );

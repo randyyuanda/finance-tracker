@@ -35,18 +35,44 @@ exports.createAccount = async (req, res) => {
 
 exports.updateAccount = async (req, res) => {
   try {
-    const { userId, ...data } = req.body;
+    const { userId, balance: newBalanceRaw, ...otherFields } = req.body;
     const existing = await prisma.account.findFirst({
       where: { id: req.params.id, userId: req.user._id },
     });
     if (!existing) return res.status(404).json({ message: 'Account not found' });
 
-    if (data.balance !== undefined) data.balance = Number(data.balance);
+    const accountData = { ...otherFields };
+    const extraOps = [];
 
-    const account = await prisma.account.update({
-      where: { id: req.params.id },
-      data,
-    });
+    if (newBalanceRaw !== undefined) {
+      const newBalance = Number(newBalanceRaw);
+      const diff = newBalance - existing.balance;
+
+      if (Math.abs(diff) > 0.001) {
+        const catType = diff > 0 ? 'income' : 'expense';
+        let cat = await prisma.category.findFirst({
+          where: { userId: req.user._id, name: 'Balance Adjustment', type: catType },
+        });
+        if (!cat) {
+          cat = await prisma.category.create({
+            data: { userId: req.user._id, name: 'Balance Adjustment', type: catType, color: '#faad14', icon: 'adjustment', isDefault: true },
+          });
+        }
+        accountData.balance = { increment: diff };
+        extraOps.push(
+          prisma.transaction.create({
+            data: { userId: req.user._id, accountId: req.params.id, categoryId: cat.id, amount: Math.abs(diff), type: catType, date: new Date(), note: 'Balance adjustment' },
+          })
+        );
+      } else {
+        accountData.balance = newBalance;
+      }
+    }
+
+    const [account] = await prisma.$transaction([
+      prisma.account.update({ where: { id: req.params.id }, data: accountData }),
+      ...extraOps,
+    ]);
     res.json(fmtAccount(account));
   } catch (err) {
     res.status(500).json({ message: err.message });

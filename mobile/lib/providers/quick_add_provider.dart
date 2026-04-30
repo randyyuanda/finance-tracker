@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import '../core/api.dart';
 import '../core/storage.dart';
 import '../models/quick_add_config.dart';
 
@@ -10,6 +11,12 @@ class QuickAddProvider extends ChangeNotifier {
   List<QuickAddConfig> get configs => _configs.isEmpty ? QuickAddConfig.defaults : _configs;
 
   Future<void> initialize() async {
+    await _loadFromLocal();
+    await _fetchFromDB();
+    _syncToWidget();
+  }
+
+  Future<void> _loadFromLocal() async {
     final prefs = await Storage.getQuickAdds();
     if (prefs != null) {
       try {
@@ -22,7 +29,18 @@ class QuickAddProvider extends ChangeNotifier {
       _configs = QuickAddConfig.defaults;
     }
     notifyListeners();
-    _syncToWidget();
+  }
+
+  Future<void> _fetchFromDB() async {
+    try {
+      final token = await Storage.getToken();
+      if (token == null) return;
+      final res = await ApiClient.dio.get('/quickadd');
+      final list = res.data as List;
+      _configs = list.map((e) => QuickAddConfig.fromJson(e as Map<String, dynamic>)).toList();
+      await Storage.saveQuickAdds(jsonEncode(_configs.map((e) => e.toJson()).toList()));
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> updateConfig(int index, QuickAddConfig config) async {
@@ -32,8 +50,15 @@ class QuickAddProvider extends ChangeNotifier {
       _configs = list;
       notifyListeners();
       await Storage.saveQuickAdds(jsonEncode(_configs.map((e) => e.toJson()).toList()));
+      await _saveToDB();
       _syncToWidget();
     }
+  }
+
+  Future<void> _saveToDB() async {
+    try {
+      await ApiClient.dio.put('/quickadd', data: _configs.map((e) => e.toJson()).toList());
+    } catch (_) {}
   }
 
   Future<void> _syncToWidget() async {
