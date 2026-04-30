@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -369,7 +370,7 @@ class _DeepLinkHandlerState extends State<_DeepLinkHandler> {
     });
   }
 
-  void _handleUri(Uri uri) {
+  void _handleUri(Uri uri) async {
     debugPrint('BuxBux Foreground URI received: $uri');
     if (uri.scheme == 'buxbux' && (uri.host == 'add' || uri.host == 'quickadd')) {
       final type = uri.queryParameters['type'] ?? 'expense';
@@ -384,6 +385,62 @@ class _DeepLinkHandlerState extends State<_DeepLinkHandler> {
       String? note = uri.queryParameters['note'];
       if (note != null && note.isEmpty) note = null;
       
+      String? finalAccountId = accountId;
+      String? finalCategoryId = categoryId;
+      
+      // Auto-save logic for fully configured QuickAdd widgets
+      if (uri.host == 'quickadd' && amount != null) {
+        final ap = context.read<AccountProvider>();
+        final cp = context.read<CategoryProvider>();
+        
+        if (finalAccountId == null) {
+          if (ap.accounts.isEmpty) await ap.fetchAll();
+          if (ap.accounts.isNotEmpty) finalAccountId = ap.accounts.first.id;
+        }
+        
+        if (finalCategoryId == null) {
+          if (cp.categories.isEmpty) await cp.fetchAll();
+          final cats = type == 'income' ? cp.incomeCategories : cp.expenseCategories;
+          if (cats.isNotEmpty) finalCategoryId = cats.first.id;
+        }
+
+        if (finalAccountId != null && finalCategoryId != null) {
+          final rawAmount = double.tryParse(amount.replaceAll(RegExp(r'[^0-9]'), ''));
+          if (rawAmount != null) {
+            final ok = await context.read<TransactionProvider>().create({
+              'type': type,
+              'amount': rawAmount,
+              'accountId': finalAccountId,
+              'categoryId': finalCategoryId,
+              'date': DateTime.now().toIso8601String(),
+              'note': note?.trim(),
+            });
+            
+            if (ok) {
+              final typeLabel = type == 'income' ? 'Income' : 'Expense';
+              
+              // Find currency
+              String currency = 'USD';
+              try {
+                final account = ap.accounts.firstWhere((a) => a.id == finalAccountId);
+                currency = account.currency;
+              } catch (_) {}
+
+              // Format amount
+              final formattedAmount = NumberFormat('#,##0', 'en_US').format(rawAmount).replaceAll(',', '.');
+
+              await NotificationService.showImmediate(
+                id: DateTime.now().hashCode.toString(),
+                title: 'Transaction Logged',
+                body: 'Successfully added $typeLabel $currency $formattedAmount from Quick Widget',
+              );
+              SystemNavigator.pop();
+              return;
+            }
+          }
+        }
+      }
+
       debugPrint('Routing to /quick_add with type=$type, amount=$amount, account=$accountId');
       Navigator.pushNamed(context, '/quick_add', arguments: {
         'type': type,
