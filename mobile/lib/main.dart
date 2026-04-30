@@ -301,17 +301,30 @@ class _AppRootState extends State<_AppRoot> {
           case '/add_transaction':
             final type = settings.arguments as String?;
             return slideRoute(AddTransactionScreen(initialType: type));
+// Updated quick add route handling with additional parameters
           case '/quick_add':
             final qArgs = settings.arguments;
             String qType = 'expense';
             String? qAmount;
+            String? qAccountId;
+            String? qCategoryId;
+            String? qNote;
             if (qArgs is String) {
               qType = qArgs;
             } else if (qArgs is Map) {
               qType = qArgs['type'] as String? ?? 'expense';
               qAmount = qArgs['amount'] as String?;
+              qAccountId = qArgs['accountId'] as String?;
+              qCategoryId = qArgs['categoryId'] as String?;
+              qNote = qArgs['note'] as String?;
             }
-            return fadeRoute(QuickAddScreen(type: qType, prefilledAmount: qAmount));
+            return fadeRoute(QuickAddScreen(
+              type: qType,
+              prefilledAmount: qAmount,
+              accountId: qAccountId,
+              categoryId: qCategoryId,
+              note: qNote,
+            ));
           case '/transfer':
             return slideRoute(const TransferScreen());
           default:          return null;
@@ -357,10 +370,28 @@ class _DeepLinkHandlerState extends State<_DeepLinkHandler> {
   }
 
   void _handleUri(Uri uri) {
-    if (uri.scheme == 'buxbux' && uri.host == 'add') {
+    debugPrint('BuxBux Foreground URI received: $uri');
+    if (uri.scheme == 'buxbux' && (uri.host == 'add' || uri.host == 'quickadd')) {
       final type = uri.queryParameters['type'] ?? 'expense';
       final amount = uri.queryParameters['amount'];
-      Navigator.pushNamed(context, '/quick_add', arguments: {'type': type, 'amount': amount});
+      
+      String? accountId = uri.queryParameters['accountId'];
+      if (accountId != null && accountId.isEmpty) accountId = null;
+      
+      String? categoryId = uri.queryParameters['categoryId'];
+      if (categoryId != null && categoryId.isEmpty) categoryId = null;
+      
+      String? note = uri.queryParameters['note'];
+      if (note != null && note.isEmpty) note = null;
+      
+      debugPrint('Routing to /quick_add with type=$type, amount=$amount, account=$accountId');
+      Navigator.pushNamed(context, '/quick_add', arguments: {
+        'type': type,
+        'amount': amount,
+        'accountId': accountId,
+        'categoryId': categoryId,
+        'note': note,
+      });
     }
   }
 

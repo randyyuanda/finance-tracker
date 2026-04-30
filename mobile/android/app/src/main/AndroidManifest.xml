@@ -45,6 +45,9 @@
                 <data
                     android:scheme="buxbux"
                     android:host="add" />
+                <data
+                    android:scheme="buxbux"
+                    android:host="quickadd" />
             </intent-filter>
         </activity>
 

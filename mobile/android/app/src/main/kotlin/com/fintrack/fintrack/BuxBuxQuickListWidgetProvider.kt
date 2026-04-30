@@ -5,7 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 
 class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
 
@@ -76,7 +76,7 @@ class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
 
             val bgRes = if (type == "expense") R.drawable.widget_btn_expense_alt
                         else R.drawable.widget_btn_income_alt
-            views.setInt(ids.container, "setBackgroundResource", bgRes)
+            // views.setInt(ids.container, "setBackgroundResource", bgRes) // Known to crash Samsung launchers
 
             // Use background intent so transactions are posted without opening the app.
             val accountId = prefs.getString("q${i}_accountId", "") ?: ""
@@ -88,7 +88,17 @@ class BuxBuxQuickListWidgetProvider : AppWidgetProvider() {
                 "&categoryId=${Uri.encode(categoryId)}" +
                 "&note=${Uri.encode(note)}"
             )
-            val pendingIntent = HomeWidgetBackgroundIntent.getBroadcast(context, uri)
+            val intent = android.content.Intent(context, MainActivity::class.java).apply {
+                action = "es.antonborri.home_widget.action.LAUNCH"
+                data = uri
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                context, 
+                i, // unique request code for each button
+                intent, 
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
             views.setOnClickPendingIntent(ids.container, pendingIntent)
         }
 

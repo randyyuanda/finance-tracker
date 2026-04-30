@@ -93,7 +93,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
             // From Account
             DropdownButtonFormField<String>(
-              value: _fromAccountId,
+              initialValue: _fromAccountId,
               decoration: const InputDecoration(labelText: 'From Account', prefixIcon: Icon(Icons.outbox_outlined)),
               items: accounts.map((Account a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => _fromAccountId = v),
@@ -103,7 +103,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
             // To Account
             DropdownButtonFormField<String>(
-              value: _toAccountId,
+              initialValue: _toAccountId,
               decoration: const InputDecoration(labelText: 'To Account', prefixIcon: Icon(Icons.inbox_outlined)),
               items: accounts.map((Account a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => _toAccountId = v),

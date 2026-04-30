@@ -14,7 +14,10 @@ import '../../widgets/gradient_button.dart';
 class QuickAddScreen extends StatefulWidget {
   final String type;
   final String? prefilledAmount;
-  const QuickAddScreen({super.key, required this.type, this.prefilledAmount});
+  final String? accountId;
+  final String? categoryId;
+  final String? note;
+  const QuickAddScreen({super.key, required this.type, this.prefilledAmount, this.accountId, this.categoryId, this.note});
 
   @override
   State<QuickAddScreen> createState() => _QuickAddScreenState();
@@ -27,31 +30,60 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   String? _categoryId;
   String? _accountId;
   bool _loading = false;
+  bool _defaultsLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _type = widget.type;
+    // Prefill amount if provided
     if (widget.prefilledAmount != null) {
       final amt = double.tryParse(widget.prefilledAmount!);
       if (amt != null && amt > 0) {
         _amountCtrl.text = NumberFormat('#,###', 'id_ID').format(amt.toInt());
       }
     }
+    // Prefill account, category, note from widget parameters
+    if (widget.accountId?.isNotEmpty == true) _accountId = widget.accountId;
+    if (widget.categoryId?.isNotEmpty == true) _categoryId = widget.categoryId;
+    if (widget.note?.isNotEmpty == true) _noteCtrl.text = widget.note!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Always fetch on open — handles cold-start from widget tap.
-      context.read<AccountProvider>().fetchAll();
-      context.read<CategoryProvider>().fetchAll();
+      // Fetch providers if empty (cold-start from home-screen widget).
+      final ap = context.read<AccountProvider>();
+      final cp = context.read<CategoryProvider>();
+      if (ap.accounts.isEmpty) ap.fetchAll();
+      if (cp.categories.isEmpty) cp.fetchAll();
+      _loadDefaults();
     });
   }
 
-  void _applyDefaults(List accounts, List categories) {
-    if (accounts.isNotEmpty && _accountId == null) {
-      _accountId = accounts.first.id;
-    }
-    final filtered = categories.where((c) => c.type == _type).toList();
-    if (filtered.isNotEmpty && _categoryId == null) {
-      _categoryId = filtered.first.id;
+  // Called from didChangeDependencies when providers load after a cold-start,
+  // and from _buildMiniTab when the user switches Income ↔ Expense.
+  void _loadDefaults() {
+    final accs = context.read<AccountProvider>().accounts;
+    final cats = _type == 'income'
+        ? context.read<CategoryProvider>().incomeCategories
+        : context.read<CategoryProvider>().expenseCategories;
+    if (accs.isEmpty && cats.isEmpty) return;
+    setState(() {
+      if (accs.isNotEmpty && _accountId == null) _accountId = accs.first.id;
+      if (cats.isNotEmpty) _categoryId = cats.first.id; // always reset on type switch
+      _defaultsLoaded = true;
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set defaults once providers finish loading (handles widget cold-start race).
+    if (!_defaultsLoaded) {
+      final accs = context.read<AccountProvider>().accounts;
+      final cats = _type == 'income'
+          ? context.read<CategoryProvider>().incomeCategories
+          : context.read<CategoryProvider>().expenseCategories;
+      if (accs.isNotEmpty && _accountId == null) _accountId = accs.first.id;
+      if (cats.isNotEmpty && _categoryId == null) _categoryId = cats.first.id;
+      if (_accountId != null && _categoryId != null) _defaultsLoaded = true;
     }
   }
 
@@ -66,24 +98,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   }
 
   Future<void> _save() async {
-    if (_amountCtrl.text.isEmpty) return;
-
-    // Last-chance: set defaults if providers loaded but defaults haven't been applied yet
-    final accs = context.read<AccountProvider>().accounts;
-    final cats = context.read<CategoryProvider>().categories;
-    if (_accountId == null && accs.isNotEmpty) _accountId = accs.first.id;
-    if (_categoryId == null) {
-      final filtered = cats.where((c) => c.type == _type).toList();
-      if (filtered.isNotEmpty) _categoryId = filtered.first.id;
-    }
-
-    if (_accountId == null || _categoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No account or category found. Please set up your accounts first.')),
-      );
-      return;
-    }
-
+    if (_amountCtrl.text.isEmpty || _accountId == null || _categoryId == null) return;
     setState(() => _loading = true);
     final rawAmount = double.parse(_amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), ''));
     final ok = await context.read<TransactionProvider>().create({
@@ -111,7 +126,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       } else {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.read<TransactionProvider>().error ?? 'Failed to save transaction')),
+          SnackBar(content: Text(context.read<TransactionProvider>().error ?? 'Failed')),
         );
       }
     }
@@ -119,26 +134,17 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accountProvider = context.watch<AccountProvider>();
-    final categoryProvider = context.watch<CategoryProvider>();
-    final accounts = accountProvider.accounts;
-    final allCategories = categoryProvider.categories;
-    final categories = allCategories.where((c) => c.type == _type).toList();
-    final isDataLoading = accountProvider.loading || categoryProvider.loading;
+    final categories = _type == 'income'
+        ? context.watch<CategoryProvider>().incomeCategories
+        : context.watch<CategoryProvider>().expenseCategories;
+    final accounts = context.watch<AccountProvider>().accounts;
 
-    // Apply defaults as soon as data arrives (handles cold-start race)
-    if (accounts.isNotEmpty || allCategories.isNotEmpty) {
-      _applyDefaults(accounts, allCategories);
-    }
-
-    // Keep _categoryId valid when type switches or categories reload
+    // Keep _categoryId valid when the type changes or categories reload.
+    // Schedule via postFrameCallback to avoid mutating state during build.
     if (_categoryId != null && categories.isNotEmpty && !categories.any((c) => c.id == _categoryId)) {
-      _categoryId = categories.first.id;
-    }
-
-    // If _accountId is stale (account was deleted), clear it
-    if (_accountId != null && accounts.isNotEmpty && !accounts.any((a) => a.id == _accountId)) {
-      _accountId = accounts.first.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _categoryId = categories.first.id);
+      });
     }
 
     final accentColor = _type == 'income' ? kIncomeColor : kExpenseColor;
@@ -227,82 +233,67 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      if (isDataLoading)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                                SizedBox(width: 10),
-                                Text('Loading accounts...', style: TextStyle(fontSize: 13)),
-                              ],
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                            border: Border.all(color: cardBorder),
-                          ),
-                          child: Column(
-                            children: [
-                              DropdownButtonFormField<String>(
-                                value: categories.any((c) => c.id == _categoryId) ? _categoryId : null,
-                                dropdownColor: cardColor,
-                                decoration: InputDecoration(
-                                  labelText: 'Category',
-                                  prefixIcon: Icon(Icons.category_outlined, color: hintColor),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                ),
-                                items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                                onChanged: (v) => setState(() => _categoryId = v),
-                              ),
-                              Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
-                              DropdownButtonFormField<String>(
-                                value: accounts.any((a) => a.id == _accountId) ? _accountId : null,
-                                dropdownColor: cardColor,
-                                decoration: InputDecoration(
-                                  labelText: 'Account',
-                                  prefixIcon: Icon(Icons.account_balance_wallet_outlined, color: hintColor),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                ),
-                                items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
-                                onChanged: (v) => setState(() => _accountId = v),
-                              ),
-                              Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
-                              TextField(
-                                controller: _noteCtrl,
-                                decoration: InputDecoration(
-                                  labelText: 'Note (optional)',
-                                  prefixIcon: Icon(Icons.notes, color: hintColor),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
+                          border: Border.all(color: cardBorder),
                         ),
+                        child: Column(
+                          children: [
+                            DropdownButtonFormField<String>(
+                              initialValue: _categoryId,
+                              dropdownColor: cardColor,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                prefixIcon: Icon(Icons.category_outlined, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                              items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                              onChanged: (v) => setState(() => _categoryId = v),
+                            ),
+                            Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
+                            DropdownButtonFormField<String>(
+                              initialValue: _accountId,
+                              dropdownColor: cardColor,
+                              decoration: InputDecoration(
+                                labelText: 'Account',
+                                prefixIcon: Icon(Icons.account_balance_wallet_outlined, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                              items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
+                              onChanged: (v) => setState(() => _accountId = v),
+                            ),
+                            Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey.shade100),
+                            TextField(
+                              controller: _noteCtrl,
+                              decoration: InputDecoration(
+                                labelText: 'Note (optional)',
+                                prefixIcon: Icon(Icons.notes, color: hintColor),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 40),
 
                       GradientButton(
-                        onTap: (_loading || isDataLoading) ? null : _save,
+                        onTap: _loading ? null : _save,
                         label: 'Save ${_type[0].toUpperCase()}${_type.substring(1)}',
                         loading: _loading,
                         colors: bgGradient,
@@ -324,12 +315,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       onTap: () {
         setState(() {
           _type = val;
-          _categoryId = null;
+          _categoryId = null; // will be re-set by _loadDefaults
         });
-        // Reset and re-apply defaults for the new type
-        final cats = context.read<CategoryProvider>().categories;
-        final filtered = cats.where((c) => c.type == val).toList();
-        if (filtered.isNotEmpty) setState(() => _categoryId = filtered.first.id);
+        _loadDefaults();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
